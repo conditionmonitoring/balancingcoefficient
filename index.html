@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en"> 
 <head>
@@ -621,6 +622,94 @@
     </div>
 
     <script>
+      // --- SUPABASE SAVE & SEARCH (FIXED) ---
+    document.getElementById('saveToCloudButton').addEventListener('click', async () => {
+        const eqName = equipmentNameInput.value;
+        const plName = plantNameInput.value;
+        const rDate = reportDateInput.value;
+
+        if(!eqName) { alert("Please enter an Equipment Name first."); return; }
+
+        const allData = {
+            header: { equipmentName: eqName, plantName: plName, reportDate: rDate },
+            details: {
+                numVanes: numVanesInput.value,
+                rotationDirection: rotationDirectionInput.value,
+                ratedPower: ratedPowerInput.value,
+                rotorRPM: rotorRPMInput.value,
+                rotorType: rotorTypeSelect.value,
+            },
+            suggestion: { rotorWeight: rotorWeightInput.value, trialRadius: trialRadiusInput.value },
+            globalState: {
+                lastCalculationMode: lastCalculationMode,
+                lastProcessedLocations: lastProcessedLocations,
+                lastBalancingAction: lastBalancingAction,
+                measurementLocation: measurementLocationSelect.value
+            },
+            balancingData: balancingData
+        };
+
+        const { data, error } = await supabase
+            .from('balancing_records')
+            .insert([
+                { 
+                    equipment_name: eqName, 
+                    plant_name: plName, 
+                    report_date: rDate, 
+                    full_data: allData 
+                }
+            ]);
+
+        if (error) {
+            alert('Error saving to cloud: ' + error.message);
+        } else {
+            alert('Successfully saved to Supabase Cloud!');
+        }
+    });
+
+    document.getElementById('searchCloudButton').addEventListener('click', async () => {
+        const eqName = equipmentNameInput.value;
+        const plName = plantNameInput.value;
+        
+        let query = supabase.from('balancing_records').select('id, report_date, equipment_name, plant_name, full_data').order('report_date', { ascending: false });
+
+        if (eqName) { query = query.ilike('equipment_name', `%${eqName}%`); }
+        if (plName) { query = query.ilike('plant_name', `%${plName}%`); }
+
+        const { data, error } = await query;
+
+        if (error) {
+            alert("Error fetching history: " + error.message);
+            return;
+        }
+
+        if (data.length === 0) {
+            alert("No records found.");
+            return;
+        }
+
+        const listContainer = document.getElementById('cloudResultsList');
+        listContainer.innerHTML = '';
+        
+        data.forEach(record => {
+            const div = document.createElement('div');
+            div.className = "p-3 border border-gray-300 dark:border-gray-600 rounded hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center transition";
+            div.innerHTML = `
+                <div>
+                    <p class="font-bold dark:text-gray-200">${record.equipment_name}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${record.plant_name || 'No Plant'} | ${record.report_date}</p>
+                </div>
+                <span class="text-blue-600 dark:text-blue-400 text-sm font-medium">Load</span>
+            `;
+            div.onclick = () => {
+                loadDataFromObject(record.full_data); 
+                document.getElementById('cloudResultsModal').classList.add('hidden'); 
+            };
+            listContainer.appendChild(div);
+        });
+
+        document.getElementById('cloudResultsModal').classList.remove('hidden');
+    });
         // --- Global Variables & DOM Elements ---
         const locations = ["IBH", "IBV", "IBA", "OBH", "OBV", "OBA"];
         let balancingData = {}; 
