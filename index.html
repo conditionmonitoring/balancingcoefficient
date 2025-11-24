@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="en"> 
 <head>
@@ -886,8 +884,17 @@
             window.location.reload();
         });
 
-        // Define your admin email here
-const ADMIN_EMAIL = 'souravbiswal50@gmail.com'; // <--- Change this to match your SQL
+// 1. Define a LIST of admins
+const ADMIN_EMAILS = [
+    'souravbiswal50@gmail.com',
+    'kandregula.vijaykrishna@tatasteel.com',
+    'abinash.bhuyan@tatasteel.com',
+    'hrishita.hiremath@tatasteel.com',
+    'upali.behera@tatasteel.com',
+    'rahul.pandit@tatasteel.com',
+    'Rajesh.kar2@tatasteel.com',
+    'abhishek.karn@tatasteel.com'
+];
 
 supabase.auth.onAuthStateChange((event, session) => {
     if (session) {
@@ -896,12 +903,13 @@ supabase.auth.onAuthStateChange((event, session) => {
         mainAppContainer.classList.remove('opacity-20', 'pointer-events-none');
         currentUserDisplay.innerHTML = `<i class="fas fa-user-circle"></i> ${currentUser.email}`;
 
-        // UX Check: Hide "Save to Cloud" button if not admin
+        // 2. Check if the current user is in the list
         const saveButton = document.getElementById('saveToCloudButton');
-        if (currentUser.email !== ADMIN_EMAIL) {
-            saveButton.classList.add('hidden');
+        
+        if (ADMIN_EMAILS.includes(currentUser.email)) {
+            saveButton.classList.remove('hidden'); // Show button for admins
         } else {
-            saveButton.classList.remove('hidden');
+            saveButton.classList.add('hidden');    // Hide for everyone else
         }
 
     } else {
