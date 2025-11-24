@@ -1,192 +1,88 @@
 
+
 <!DOCTYPE html>
-<html lang="en"> <head>
+<html lang="en"> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced Single Plane Balancing Calculator</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .input-group {
-            margin-bottom: 1rem;
-        }
-        .input-group label, .radio-group label {
-            display: block;
-            margin-bottom: 0.25rem;
-            font-weight: 500;
-        }
-        .input-group input, .input-group select {
-            width: 100%;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            border: 1px solid #D1D5DB; /* gray-300 */
-            background-color: #F9FAFB; /* *** ADDED (bg-gray-50) for Day Mode contrast *** */
-        }
-        /* *** MODIFIED: Added dark mode for inputs *** */
-        .dark .input-group input, .dark .input-group select {
-            background-color: #374151; /* dark:bg-gray-700 */
-            border-color: #4B5563; /* dark:border-gray-600 */
-            color: #F3F4F6; /* dark:text-gray-100 */
-        }
-        .dark .input-group input::placeholder, .dark .input-group select::placeholder {
-            color: #9CA3AF; /* dark:placeholder-gray-400 */
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .input-group { margin-bottom: 1rem; }
+        .input-group label, .radio-group label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+        .input-group input, .input-group select { width: 100%; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid #D1D5DB; background-color: #F9FAFB; }
+        
+        /* Dark mode inputs */
+        .dark .input-group input, .dark .input-group select { background-color: #374151; border-color: #4B5563; color: #F3F4F6; }
+        .dark .input-group input::placeholder, .dark .input-group select::placeholder { color: #9CA3AF; }
 
-        .table-input {
-            width: 100%;
-            padding: 0.4rem;
-            border-radius: 0.25rem;
-            border: 1px solid #D1D5DB;
-            font-size: 0.875rem;
-            background-color: #F9FAFB; /* *** ADDED (bg-gray-50) for Day Mode contrast *** */
-        }
-        .table-input:focus {
-            border-color: #3B82F6; /* blue-500 */
-            ring: 1px;
-            ring-color: #3B82F6;
-        }
-        /* *** MODIFIED: Added dark mode for table inputs/outputs *** */
-        .dark .table-input {
-             background-color: #374151; /* dark:bg-gray-700 */
-             border-color: #4B5563; /* dark:border-gray-600 */
-             color: #F3F4F6; /* dark:text-gray-100 */
-        }
-        .table-output {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
-            color: #1E40AF; /* blue-800 */
-        }
-        .dark .table-output {
-            color: #93C5FD; /* dark:text-blue-300 */
-        }
+        .table-input { width: 100%; padding: 0.4rem; border-radius: 0.25rem; border: 1px solid #D1D5DB; font-size: 0.875rem; background-color: #F9FAFB; }
+        .table-input:focus { border-color: #3B82F6; ring: 1px; ring-color: #3B82F6; }
+        .dark .table-input { background-color: #374151; border-color: #4B5563; color: #F3F4F6; }
+        
+        .table-output { font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #1E40AF; }
+        .dark .table-output { color: #93C5FD; }
 
-        .results-group p {
-            margin-bottom: 0.5rem;
-        }
-        #polarPlotContainer {
-            position: relative; /* For positioning the arrow */
-        }
-        #rotationDirectionArrow {
+        #polarPlotContainer { position: relative; width: 100%; max-width: 600px; margin: 0 auto; }
+        #rotationDirectionArrow { position: absolute; top: 10px; left: 10px; font-size: 0.9rem; font-weight: bold; color: #3B82F6; background-color: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 4px; z-index: 10; pointer-events: none; }
+        .dark #rotationDirectionArrow { background-color: rgba(31, 41, 55, 0.8); color: #60A5FA; }
+
+        /* Tooltip Styles */
+        #polarPlotTooltip {
             position: absolute;
-            top: -3px; /* Adjust as needed */
-            left: 7%;
-            transform: translateX(-50%);
-            font-size: 1.0rem; /* Arrow size */
-            font-weight: bold;
-            color: #3B82F6; /* blue-500 */
-            padding: 0.25rem 0.5rem;
-            background-color: rgba(240, 249, 255, 0); /* Match new plot background */
-            border-radius: 0.25rem;
-            z-index: 10;
-        }
-        /* *** MODIFIED: Added dark mode for plot border *** */
-        #polarPlotCanvas {
-            border: 1px solid #93c5fd; /* blue-300 */
-            border-radius: 0.375rem;
-            width: 100%;    /* Fill the container */
-            max-width: 100%; 
-            height: auto;   /* Height is controlled by aspect-ratio */
-            aspect-ratio: 1 / 1; /* Force 1:1 square aspect ratio */
-        }
-        .dark #polarPlotCanvas {
-            border-color: #2563EB; /* dark:border-blue-600 */
-        }
-        
-        .legend-color-box {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            margin-right: 6px;
-            vertical-align: middle;
-            border-radius: 2px;
-        }
-        .legend-dot { 
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            margin-right: 6px;
-            vertical-align: middle;
-            border-radius: 50%; 
-        }
-        .tab-button {
-            padding: 0.5rem 1rem;
-            margin-right: 0.5rem;
-            margin-bottom: -1px; /* Overlap border */
-            border-radius: 0.375rem 0.375rem 0 0;
-            border: 1px solid #D1D5DB;
-            border-bottom: none;
-            background-color: #E5E7EB; /* gray-200 */
-            cursor: pointer;
-            font-weight: 500;
-        }
-        /* *** MODIFIED: Added dark mode for tabs *** */
-        .dark .tab-button {
-            border-color: #374151; /* dark:border-gray-700 */
-            background-color: #374151; /* dark:bg-gray-700 */
-            color: #D1D5DB; /* dark:text-gray-300 */
-        }
-        .tab-button.active {
-            background-color: white;
-            border-bottom: 1px solid white;
-            color: #3B82F6; /* blue-500 */
-        }
-         /* *** MODIFIED: Added dark mode for active tab *** */
-        .dark .tab-button.active {
-            background-color: #1F2937; /* dark:bg-gray-800 */
-            border-bottom-color: #1F2937; /* dark:border-b-gray-800 */
-            color: #60A5FA; /* dark:text-blue-400 */
-        }
-        .tab-content {
-            border: 1px solid #D1D5DB;
-            padding: 1.5rem;
-            border-radius: 0 0.375rem 0.375rem 0.375rem; /* Adjust for tab overlap */
-            background-color: white;
-        }
-         /* *** MODIFIED: Added dark mode for tab content *** */
-        .dark .tab-content {
-            border-color: #374151; /* dark:border-gray-700 */
-            background-color: #1F2937; /* dark:bg-gray-800 */
-        }
-        
-        .hidden {
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            z-index: 20;
             display: none;
+            white-space: nowrap;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .footer-button {
-            padding: 0.6rem 1.2rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            transition: background-color 0.2s ease-in-out;
+        .legend-value {
+            font-family: 'Courier New', monospace; 
+            font-weight: 700;
+            margin-left: 5px;
         }
-        .details-section {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background-color: #f0f9ff; /* sky-50 */
-            border-radius: 0.5rem;
-            border: 1px solid #e0f2fe; /* sky-200 */
-        }
-         /* *** MODIFIED: Added dark mode for sections *** */
-        .dark .details-section {
-            background-color: #0c4a6e; /* dark:bg-sky-900/50 - manual */
-            border-color: #075985; /* dark:border-sky-800 - manual */
-        }
-        .suggestion-section {
-             margin-bottom: 2rem;
-             padding: 1.5rem;
-             background-color: #f0f5ff; /* indigo-50 */
-             border-radius: 0.5rem;
-             border: 1px solid #e0e7ff; /* indigo-200 */
-        }
-        .dark .suggestion-section {
-             background-color: #3730a3; /* dark:bg-indigo-900/50 - manual */
-             border-color: #312e81; /* dark:border-indigo-800 - manual */
-        }
-        #rotorTypeImage {
-            border: 1px solid #e5e7eb; /* gray-200 */
-            border-radius: 0.25rem;
-        }
-        /* Basic prose styles for About section */
+
+        #polarPlotCanvas { border: 1px solid #93c5fd; border-radius: 0.375rem; width: 100%; height: auto; display: block; cursor: crosshair; }
+        .dark #polarPlotCanvas { border-color: #2563EB; }
+        
+        .legend-color-box { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+        .legend-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: middle; border-radius: 50%; }
+        
+        .tab-button { padding: 0.5rem 1rem; margin-right: 0.5rem; margin-bottom: -1px; border-radius: 0.375rem 0.375rem 0 0; border: 1px solid #D1D5DB; border-bottom: none; background-color: #E5E7EB; cursor: pointer; font-weight: 500; }
+        .dark .tab-button { border-color: #374151; background-color: #374151; color: #D1D5DB; }
+        
+        .tab-button.active { background-color: white; border-bottom: 1px solid white; color: #3B82F6; }
+        .dark .tab-button.active { background-color: #1F2937; border-bottom-color: #1F2937; color: #60A5FA; }
+        
+        .tab-content { border: 1px solid #D1D5DB; padding: 1.5rem; border-radius: 0 0.375rem 0.375rem 0.375rem; background-color: white; }
+        .dark .tab-content { border-color: #374151; background-color: #1F2937; }
+        
+        .hidden { display: none; }
+        .footer-button { padding: 0.6rem 1.2rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.2s ease-in-out; }
+        
+        .details-section { margin-bottom: 2rem; padding: 1.5rem; background-color: #f0f9ff; border-radius: 0.5rem; border: 1px solid #e0f2fe; }
+        .dark .details-section { background-color: #0c4a6e; border-color: #075985; }
+        
+        .suggestion-section { margin-bottom: 2rem; padding: 1.5rem; background-color: #f0f5ff; border-radius: 0.5rem; border: 1px solid #e0e7ff; }
+        .dark .suggestion-section { background-color: #3730a3; border-color: #312e81; }
+        
+        #rotorTypeImage { border: 1px solid #e5e7eb; border-radius: 0.25rem; }
+        
         .prose { max-width: none; color: #374151; }
         .prose h4 { font-size: 1.125rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
         .prose h5 { font-size: 1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
@@ -194,15 +90,29 @@
         .prose ul, .prose ol { margin-top: 0.75rem; margin-bottom: 0.75rem; padding-left: 1.5rem; }
         .prose li { margin-top: 0.25rem; margin-bottom: 0.25rem; }
         .prose strong { font-weight: 600; }
-        
-        /* *** NEW: Dark mode for prose (About) section *** */
-        .dark .prose { color: #D1D5DB; } /* dark:text-gray-300 */
-        .dark .prose h4, .dark .prose h5 { color: #F9FAFB; } /* dark:text-gray-50 */
-        .dark .prose strong { color: #FFFFFF; } /* dark:text-white */
+        .dark .prose { color: #D1D5DB; }
+        .dark .prose h4, .dark .prose h5 { color: #F9FAFB; }
+        .dark .prose strong { color: #FFFFFF; }
+
+        /* Result Cards */
+        .result-card {
+            background-color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .dark .result-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-color: rgba(255,255,255,0.05);
+        }
+
+        /* Auth Overlay */
+        #authOverlay {
+            backdrop-filter: blur(5px);
+        }
     </style>
 
     <script>
-        // On page load or when changing themes, best to add inline in `head` to avoid FOUC
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark')
         } else {
@@ -210,14 +120,71 @@
         }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 p-4 md:p-8">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 p-4 md:p-8 min-h-screen">
 
-    <button id="darkModeToggle" class="fixed top-4 right-4 z-50 p-2 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-lg transition-colors">
-        <svg id="sunIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-        <svg id="moonIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-    </button>
-    
-    <div class="container mx-auto max-w-6xl bg-white dark:bg-gray-800 p-6 md:p-8 rounded-lg shadow-xl dark:shadow-gray-900/50">
+    <div id="authOverlay" class="fixed inset-0 z-[100] bg-gray-900/80 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
+            <div class="text-center mb-6">
+                <img src="https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png" alt="Logo" class="h-12 mx-auto mb-4">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Welcome Back</h2>
+                <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Single Plane Balancing Calculator</p>
+            </div>
+
+            <div id="loginForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                        <input type="email" id="authEmail" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="you@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                        <input type="password" id="authPassword" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="••••••••">
+                    </div>
+                    <button id="btnLogin" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition duration-200">
+                        Sign In
+                    </button>
+                </div>
+                <p class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                    Don't have an account? 
+                    <a href="#" id="toggleToSignup" class="text-blue-600 hover:text-blue-500 font-medium">Sign up</a>
+                </p>
+            </div>
+
+            <div id="signupForm" class="hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                        <input type="email" id="regEmail" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="you@example.com">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Create Password</label>
+                        <input type="password" id="regPassword" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="••••••••">
+                    </div>
+                    <button id="btnSignup" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition duration-200">
+                        Create Account
+                    </button>
+                </div>
+                <p class="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+                    Already have an account? 
+                    <a href="#" id="toggleToLogin" class="text-green-600 hover:text-green-500 font-medium">Sign in</a>
+                </p>
+            </div>
+            <p id="authMessage" class="mt-4 text-center text-sm font-medium text-red-500 hidden"></p>
+        </div>
+    </div>
+
+    <div id="mainAppContainer" class="container mx-auto max-w-6xl bg-white dark:bg-gray-800 p-6 md:p-8 rounded-lg shadow-xl dark:shadow-gray-900/50 opacity-20 pointer-events-none transition-opacity duration-300">
+        
+        <div class="flex justify-end mb-2 text-sm text-gray-600 dark:text-gray-400 items-center gap-4">
+            <span id="currentUserDisplay"><i class="fas fa-user-circle"></i> Not Logged In</span>
+            <button id="btnLogout" class="text-red-500 hover:text-red-700 font-medium"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+
+        <button id="darkModeToggle" class="fixed top-4 right-4 z-50 p-2 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-lg transition-colors">
+            <svg id="sunIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <svg id="moonIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        </button>
+
         <header class="mb-8 flex justify-between items-center flex-wrap">
             <img src="https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png" alt="Left Logo" class="h-8 md:h-10" onerror="this.onerror=null; this.src='https://placehold.co/120x40/cccccc/333333?text=Logo+Error';">
             
@@ -229,30 +196,44 @@
             <img src="https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png" alt="Right Logo" class="h-8 md:h-10" onerror="this.onerror=null; this.src='https://placehold.co/120x40/cccccc/333333?text=Logo+Error';">
 
             <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div class="input-group">
-                    <label for="equipmentName" class="font-medium text-gray-700 dark:text-gray-300">Equipment Name:</label>
-                    <input type="text" id="equipmentName" placeholder="e.g., Cooling Tower Fan" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
+                <div class="input-group relative">
+                    <label for="equipmentName" class="font-medium text-gray-700 dark:text-gray-300"><i class="fas fa-fan"></i> Equipment Name:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="equipmentName" placeholder="e.g., Cooling Tower Fan" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
+                        <button id="searchCloudButton" class="mt-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 rounded" title="Search History">
+                            <i class="fas fa-cloud-download-alt"></i>
+                        </button>
+                    </div>
                 </div>
+
+                <div id="cloudResultsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                        <h3 class="text-xl font-bold mb-4 dark:text-white">My Balancing History</h3>
+                        <div id="cloudResultsList" class="space-y-2"></div>
+                        <button onclick="document.getElementById('cloudResultsModal').classList.add('hidden')" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Close</button>
+                    </div>
+                </div>
+
                 <div class="input-group">
-                    <label for="plantName" class="font-medium text-gray-700 dark:text-gray-300">Plant:</label>
+                    <label for="plantName" class="font-medium text-gray-700 dark:text-gray-300"><i class="fas fa-industry"></i> Plant:</label>
                     <input type="text" id="plantName" placeholder="e.g., Steel Melting Shop" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
                 <div class="input-group">
-                    <label for="reportDate" class="font-medium text-gray-700 dark:text-gray-300">Date:</label>
+                    <label for="reportDate" class="font-medium text-gray-700 dark:text-gray-300"><i class="far fa-calendar-alt"></i> Date:</label>
                     <input type="date" id="reportDate" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
             </div>
         </header>
 
         <div class="details-section">
-            <h2 class="text-xl font-semibold mb-4 text-sky-700 dark:text-sky-200">Equipment Details</h2>
+            <h2 class="text-xl font-semibold mb-4 text-sky-700 dark:text-sky-200"><i class="fas fa-cogs mr-2"></i> Equipment Details</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
                 <div class="input-group">
-                    <label for="numVanes" class="font-medium text-sky-700 dark:text-sky-300">Number of Vanes:</label>
+                    <label for="numVanes" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-certificate"></i> Number of Vanes:</label>
                     <input type="number" id="numVanes" value="12" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
                 </div>
                 <div>
-                    <label class="font-medium text-sky-700 dark:text-sky-300">Direction of Rotation:</label>
+                    <label class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-sync-alt mr-2"></i> Direction of Rotation:</label>
                     <div class="mt-2 flex items-center space-x-2">
                         <button id="rotDirCCW" class="px-3 py-1.5 text-sm font-medium rounded-md bg-sky-600 text-white">CCW</button>
                         <button id="rotDirCW" class="px-3 py-1.5 text-sm font-medium rounded-md bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500">CW</button>
@@ -260,15 +241,15 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="ratedPower" class="font-medium text-sky-700 dark:text-sky-300">Rated Power (kW/HP):</label>
+                    <label for="ratedPower" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-bolt"></i> Rated Power (kW/HP):</label>
                     <input type="text" id="ratedPower" placeholder="e.g., 50 kW" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
                 </div>
                 <div class="input-group">
-                    <label for="rotorRPM" class="font-medium text-sky-700 dark:text-sky-300">Rotor RPM:</label>
+                    <label for="rotorRPM" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-tachometer-alt"></i> Rotor RPM:</label>
                     <input type="number" id="rotorRPM" step="any" placeholder="e.g., 3000" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
                 </div>
                  <div class="input-group md:col-span-2">
-                    <label for="measurementLocation" class="font-medium text-sky-700 dark:text-sky-300">Location for Plot & Splitting:</label>
+                    <label for="measurementLocation" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-map-marker-alt"></i> Location for Plot & Splitting:</label>
                     <select id="measurementLocation" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
                         <option value="IBH">Inboard Horizontal (IBH)</option>
                         <option value="IBV">Inboard Vertical (IBV)</option>
@@ -279,7 +260,7 @@
                     </select>
                 </div>
                  <div class="input-group md:col-span-2"> 
-                    <label for="rotorTypeSelect" class="font-medium text-sky-700 dark:text-sky-300">Rotor Type:</label>
+                    <label for="rotorTypeSelect" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-shapes"></i> Rotor Type:</label>
                     <div class="mt-1 flex flex-col items-center"> <select id="rotorTypeSelect" class="w-full md:w-auto md:min-w-[180px] focus:ring-sky-500 focus:border-sky-500">
                             <option value="">Select Type</option>
                             <option value="Overhung">Overhung</option>
@@ -296,7 +277,7 @@
                 Hide Suggestion Details
             </button>
             <div id="trialWeightSuggestionContainer" class="suggestion-section">
-                <h2 class="text-xl font-semibold mb-4 text-indigo-700 dark:text-indigo-200">Trial Weight Suggestion</h2>
+                <h2 class="text-xl font-semibold mb-4 text-indigo-700 dark:text-indigo-200"><i class="fas fa-calculator mr-2"></i> Trial Weight Suggestion</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="input-group">
                         <label for="rotorWeight" class="text-gray-700 dark:text-gray-300">Rotor Weight (kg):</label>
@@ -315,13 +296,14 @@
         </div>
 
         <div class="mb-4 flex flex-wrap border-b border-gray-300 dark:border-gray-700">
-            <button id="tabStandard" class="tab-button active">Standard Balancing (with Trial Run)</button>
-            <button id="tabKnownIC" class="tab-button">Use Known Influence Coefficient</button>
-            <button id="tabSplitting" class="tab-button">Splitting Weights</button>
-            <button id="tabAbout" class="tab-button">About</button>
+            <button id="tabStandard" class="tab-button active"><i class="fas fa-balance-scale-left mr-2"></i> Standard (Trial Run)</button>
+            <button id="tabKnownIC" class="tab-button"><i class="fas fa-brain mr-2"></i> Known IC</button>
+            <button id="tabTrim" class="tab-button"><i class="fas fa-cut mr-2"></i> Trim</button>
+            <button id="tabSplitting" class="tab-button"><i class="fas fa-project-diagram mr-2"></i> Splitting</button>
+            <button id="tabAbout" class="tab-button"><i class="fas fa-info-circle mr-2"></i> About</button>
         </div>
 
-        <div id="main-content-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div id="main-content-stack" class="flex flex-col gap-8">
             <div>
                 <div id="contentStandard" class="tab-content">
                     <h2 class="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-300">Standard Balancing Inputs</h2>
@@ -331,7 +313,7 @@
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
                                     <th class="px-2 py-2 text-center font-medium text-gray-500 dark:text-gray-400 tracking-wider">
-                                        <input type="checkbox" id="selectAllStandard" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                        <input type="checkbox" id="selectAllStandard" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" title="Select All">
                                     </th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Location</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">O Amp</th>
@@ -340,6 +322,8 @@
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">O+T Phase</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Mag</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Angle</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Final Amp</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Final Phase</th>
                                 </tr>
                             </thead>
                             <tbody id="standardBalancingTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -347,7 +331,7 @@
                         </table>
                     </div>
 
-                    <h3 class="text-lg font-medium mt-6 mb-2 text-gray-700 dark:text-gray-300">Trial Weight (Wt) - (Global)</h3>
+                    <h3 class="text-lg font-medium mt-6 mb-2 text-gray-700 dark:text-gray-300"><i class="fas fa-weight-hanging mr-2"></i> Trial Weight (Wt) - (Global)</h3>
                     <div class="flex items-center mt-1 mb-2">
                         <input type="checkbox" id="trialWeightRemovedCheckbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                         <label for="trialWeightRemovedCheckbox" class="ml-2 block text-sm text-gray-900 dark:text-gray-200 font-medium">Trial weight was removed</label>
@@ -392,13 +376,15 @@
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
                                     <th class="px-2 py-2 text-center font-medium text-gray-500 dark:text-gray-400 tracking-wider">
-                                        <input type="checkbox" id="selectAllKnownIC" class="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                        <input type="checkbox" id="selectAllKnownIC" class="h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" title="Select All">
                                     </th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Location</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">O Amp</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">O Phase</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Known IC Mag</th>
                                     <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Known IC Angle</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Final Amp</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Final Phase</th>
                                 </tr>
                             </thead>
                             <tbody id="knownIcTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -409,6 +395,75 @@
                     <button id="calculateKnownICButton" class="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50">
                         Calculate Correction Weight
                     </button>
+                </div>
+
+                <div id="contentTrim" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-indigo-700 dark:text-indigo-300">Multi-Point Trim Balancing</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        Enter the residual vibration (current levels) and the Influence Coefficients. Check multiple boxes to calculate a "Best Fit" (Least Squares) trim weight.
+                    </p>
+
+                    <div class="overflow-x-auto mb-6">
+                        <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-indigo-50 dark:bg-indigo-900/50">
+                                <tr>
+                                    <th class="px-2 py-2 text-center font-medium text-gray-500 dark:text-gray-400 tracking-wider">
+                                        <input type="checkbox" id="selectAllTrim" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" title="Select All">
+                                    </th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Location</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Residual Amp</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Residual Phase</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Mag</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Angle</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trimBalancingTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/30 rounded border border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center mb-2">
+                            <input type="checkbox" id="trimMergeCheckbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <label for="trimMergeCheckbox" class="ml-2 font-medium text-gray-700 dark:text-gray-300">
+                                Merge with Previous Weight?
+                            </label>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Check this if you want to vector-add the Trim Weight to a weight already on the rotor.</p>
+                        
+                        <div id="trimPreviousWeightInputs" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden">
+                            <div class="input-group">
+                                <label>Existing Weight Mass:</label>
+                                <input type="number" id="trimPrevMass" step="any" class="mt-1" placeholder="Existing on rotor">
+                            </div>
+                            <div class="input-group">
+                                <label>Existing Weight Angle:</label>
+                                <input type="number" id="trimPrevAngle" step="any" class="mt-1" placeholder="Existing on rotor">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="calculateTrimButton" class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out shadow-md">
+                        Calculate Multi-Point Trim Weight
+                    </button>
+
+                    <div id="trimResults" class="mt-6 hidden p-4 bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                        <h3 class="text-lg font-bold text-indigo-800 dark:text-indigo-200 mb-2">Trim Result (Least Squares)</h3>
+                        
+                        <div id="trimSoloResult">
+                            <p class="text-sm text-gray-700 dark:text-gray-300">Add this separate trim weight:</p>
+                            <p class="ml-4 text-lg font-mono text-indigo-700 dark:text-indigo-300">
+                                <span id="trimMassResult">---</span> g @ <span id="trimAngleResult">---</span>&deg;
+                            </p>
+                        </div>
+
+                        <div id="trimMergedResult" class="hidden mt-2 pt-2 border-t border-indigo-200 dark:border-indigo-700">
+                            <p class="text-sm font-bold text-gray-700 dark:text-gray-300">New Total Weight (Replace Old):</p>
+                            <p class="ml-4 text-lg font-mono text-indigo-700 dark:text-indigo-300">
+                                <span id="trimTotalMassResult">---</span> g @ <span id="trimTotalAngleResult">---</span>&deg;
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="contentSplitting" class="tab-content hidden">
@@ -455,87 +510,109 @@
                     <div class="prose"> <p>This Enhanced Single Plane Balancing Calculator (Vector Method) is designed to assist maintenance professionals and engineers in performing single-plane balancing of rotating machinery.</p>
                         <p>Key features include:</p>
                         <ul>
+                            <li>**New:** Cloud Storage with secure Login.</li>
                             <li>**New:** Table-based data entry for all 6 locations.</li>
-                            <li>**New:** Automatic calculation logic. Check 1 box for a single-sensor solution, or check 2+ boxes for an automatic least-squares solution.</li>
-                            <li>Standard trial weight method with options for adding/removing trial weights.</li>
-                            <li>Choice to calculate total correction or additional (trim) correction weights.</li>
-                            <li>Option to use a known Influence Coefficient (IC) for direct correction.</li>
-                            <li>Suggestion for an appropriate trial weight based on rotor parameters.</li>
-                            <li>Calculation for splitting a single correction weight into two weights at available locations.</li>
-                            <li>Interactive polar plot visualization of balancing vectors including High Spot and Heavy Spot.</li>
-                            <li>Data saving, loading, and report printing capabilities.</li>
+                            <li>**New:** Automatic calculation logic (Least Squares).</li>
+                            <li>Standard trial weight method and Known IC method.</li>
+                            <li>Trim Balancing with multi-point support.</li>
+                            <li>Interactive polar plot visualization.</li>
                         </ul>
-                        <h4>Calculation Procedures</h4>
-                        <h5>Single-Sensor Balancing (1 box checked)</h5>
-                        <ol>
-                            <li>Record and Plot Original Vibration: <strong>O</strong></li>
-                            <li>Calculate & Install Trial Weight: <strong>TW</strong></li>
-                            <li>Plot Vibration Data with Trial Weight: <strong>O+T</strong></li>
-                            <li>Determine Effective Vector: <strong>T = (O+T) - O</strong></li>
-                            <li>Calculate and Install Correction Weight: <strong>CW = (-O / T) x TW</strong> (vector math)</li>
-                        </ol>
-                        <h5>Least-Squares Balancing (2+ boxes checked)</h5>
-                        <ol>
-                            <li>Record <strong>O_i</strong> and <strong>O+T_i</strong> for all checked sensors <strong>i</strong>.</li>
-                            <li>Calculate <strong>T_i = (O+T_i) - O_i</strong> for all checked sensors.</li>
-                            <li>Calculate <strong>alpha_i = T_i / TW</strong> for all checked sensors.</li>
-                            <li>Calculate one optimal <strong>CW = - [ &Sigma;(O_i &middot; conj(alpha_i)) ] / [ &Sigma;(|alpha_i|^2) ]</strong></li>
-                        </ol>
-                        <p><strong>Disclaimer:</strong> This calculator provides theoretical calculations based on the inputs provided. Always follow established safety procedures and use calibrated vibration analysis equipment. The results should be verified by experienced personnel.</p>
-                        <p class="text-sm mt-4">Version: 12.1 (Full-Width Layout)</p>
+                        <p><strong>Disclaimer:</strong> This calculator provides theoretical calculations based on the inputs provided. Always follow established safety procedures.</p>
+                        <p class="text-sm mt-4">Version: 13.0 (Cloud Auth Enabled)</p>
                     </div>
-                </div>
-                
-                <div id="resultsDisplay" class="mt-6 p-6 bg-green-50 dark:bg-green-900/50 rounded-lg border border-green-200 dark:border-green-800 hidden">
-                    <h2 id="resultsTitle" class="text-xl font-semibold mb-4 text-green-700 dark:text-green-300">
-                        Calculated Results (for <span id="resultLocation" class="font-bold"></span>)
-                    </h2>
-                    <div id="icResults" class="results-group dark:text-gray-200">
-                        <p><strong>Influence Coefficient (IC) <span id="icLocationLabel"></span>:</strong></p>
-                        <p class="ml-4">Magnitude(mm/s/gram): <span id="icMagnitude" class="font-mono">---</span></p>
-                        <p class="ml-4">Angle (lag):<span id="icAngle" class="font-mono">---</span> &deg;</p>
-                    </div>
-                    <div id="correctionWeightResults" class="results-group mt-4 dark:text-gray-200">
-                        <p><strong id="correctionWeightLabel">Correction Weight (Wc):</strong></p>
-                        <p class="ml-4">Required Mass(grams): <span id="correctionWeightMass" class="font-mono">---</span></p>
-                        <p class="ml-4">Placement Angle (CCW from Ref): <span id="correctionWeightAngle" class="font-mono">---</span> &deg;</light>
-                    </div>
-                    <div id="predictedResidualsDisplay" class="results-group mt-4 hidden dark:text-gray-200">
-                         <p><strong>Predicted Residuals (mm/s):</strong></p>
-                         <p class="ml-4 text-sm"><span id="predictedResidualsList"></span></p>
-                    </div>
-                </div>
-                 <div id="errorMessage" class="mt-6 p-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg border border-red-200 dark:border-red-800 hidden">
-                    Error: <span id="errorText"></span>
                 </div>
             </div>
 
-            <div id="polar-plot-column" class="flex flex-col items-center mt-8">
-                <h2 class="text-xl font-semibold mb-1 text-blue-700 dark:text-blue-300">Polar Plot (<span id="plotLocationLabel">IBH</span>)</h2>
-                <div id="polarPlotContainer" class="w-full max-w-lg"> <div id="rotationDirectionArrow" class="text-center dark:text-blue-400">CCW ↺</div>
+            <div id="resultsDisplay" class="p-6 bg-green-50 dark:bg-green-900/50 rounded-lg border border-green-200 dark:border-green-800 hidden">
+                <h2 id="resultsTitle" class="text-xl font-semibold mb-4 text-green-700 dark:text-green-300 text-center">
+                    Calculated Results (for <span id="resultLocation" class="font-bold"></span>)
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 dark:text-gray-200">
+                    
+                    <div id="icResults" class="result-card">
+                        <p class="font-semibold mb-2 text-green-800 dark:text-green-200">Influence Coefficient (IC) <span id="icLocationLabel" class="text-xs font-normal"></span></p>
+                        <div class="flex flex-col space-y-1">
+                            <div class="flex justify-between"><span>Mag:</span> <span id="icMagnitude" class="font-mono font-bold">---</span> <span class="text-xs font-normal">mm/s/g</span></div>
+                            <div class="flex justify-between"><span>Angle:</span> <span id="icAngle" class="font-mono font-bold">---</span>&deg;</div>
+                        </div>
+                    </div>
+
+                    <div id="correctionWeightResults" class="result-card border-green-300 dark:border-green-600 bg-green-100/50 dark:bg-green-800/30">
+                        <p class="font-semibold mb-2 text-green-800 dark:text-green-200" id="correctionWeightLabel">Correction Weight (Wc)</p>
+                        <div class="flex flex-col space-y-1">
+                            <div class="flex justify-between"><span>Mass:</span> <span id="correctionWeightMass" class="font-mono font-bold text-lg">---</span> <span class="text-xs font-normal">g</span></div>
+                            <div class="flex justify-between"><span>Angle:</span> <span id="correctionWeightAngle" class="font-mono font-bold text-lg">---</span>&deg;</div>
+                        </div>
+                    </div>
+
+                    <div id="correctionWeightRemovalResults" class="result-card hidden">
+                        <p class="font-semibold mb-2 text-green-800 dark:text-green-200" id="removalWeightLabel">Remove Weight</p>
+                         <div class="flex flex-col space-y-1">
+                            <div class="flex justify-between"><span>Mass:</span> <span id="removalWeightMass" class="font-mono font-bold">---</span> <span class="text-xs font-normal">g</span></div>
+                            <div class="flex justify-between"><span>Angle:</span> <span id="removalWeightAngle" class="font-mono font-bold">---</span>&deg;</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="results-group mt-4 pt-4 border-t border-green-200 dark:border-green-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">Log Final Action Taken:</label>
+                    <div class="flex justify-center space-x-8">
+                        <div class="flex items-center">
+                            <input id="finalActionAdd" name="finalAction" type="radio" value="add" checked class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                            <label for="finalActionAdd" class="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Weight Added
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="finalActionRemove" name="finalAction" type="radio" value="remove" class="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500">
+                            <label for="finalActionRemove" class="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Weight Removed
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="predictedResidualsDisplay" class="results-group mt-4 hidden dark:text-gray-200 text-center bg-white/40 dark:bg-black/20 p-2 rounded">
+                     <p class="text-sm"><strong>Predicted Residuals (mm/s):</strong> <span id="predictedResidualsList" class="font-mono ml-2"></span></p>
+                </div>
+            </div>
+            
+            <div id="errorMessage" class="p-4 bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg border border-red-200 dark:border-red-800 hidden">
+                Error: <span id="errorText"></span>
+            </div>
+
+            <div id="polar-plot-column" class="flex flex-col items-center w-full">
+                <h2 class="text-xl font-semibold mb-2 text-blue-700 dark:text-blue-300"><i class="fas fa-bullseye"></i> Polar Plot (<span id="plotLocationLabel">IBH</span>)</h2>
+                <div id="polarPlotContainer"> 
+                    <div id="rotationDirectionArrow" class="text-center dark:text-blue-400">CCW ↺</div>
+                    <div id="polarPlotTooltip"></div>
                     <canvas id="polarPlotCanvas"></canvas>
                 </div>
-                <div id="plotLegend" class="mt-4 text-sm space-y-1 font-medium">
+                <div id="plotLegend" class="mt-4 text-sm space-y-1 font-medium grid grid-cols-2 md:grid-cols-2 gap-x-4 gap-y-2 w-full max-w-xl">
                     </div>
             </div>
         </div>
-
         <footer class="mt-12 pt-8 border-t border-gray-300 dark:border-gray-700 text-center">
             <div class="flex flex-wrap justify-center gap-3 md:gap-4 mb-4">
                 <button id="printReportButton" class="footer-button bg-teal-500 hover:bg-teal-600 text-white">
-                    Print Report
+                    <i class="fas fa-print"></i> Print Report
                 </button>
                 <button id="exportWordButton" class="footer-button bg-blue-500 hover:bg-blue-600 text-white">
-                    Export for Word
+                    <i class="fas fa-file-word"></i> Export for Word
+                </button>
+                <button id="saveToCloudButton" class="footer-button bg-indigo-500 hover:bg-indigo-600 text-white">
+                    <i class="fas fa-cloud-upload-alt"></i> Save to Cloud
                 </button>
                 <button id="saveDataButton" class="footer-button bg-sky-500 hover:bg-sky-600 text-white">
-                    Save Data
+                    <i class="fas fa-download"></i> Save Data
                 </button>
                 <button id="loadDataButton" class="footer-button bg-amber-500 hover:bg-amber-600 text-white">
-                    Load Data
+                    <i class="fas fa-upload"></i> Load Data
                 </button>
                 <button id="resetFormButton" class="footer-button bg-red-500 hover:bg-red-600 text-white">
-                    Reset All
+                    <i class="fas fa-trash-alt"></i> Reset All
                 </button>
             </div>
             <p class="text-gray-700 dark:text-gray-400 text-sm">Copyright © 2025 Condition Monitoring. All Rights Reserved.</p>
@@ -548,30 +625,48 @@
         const locations = ["IBH", "IBV", "IBA", "OBH", "OBV", "OBA"];
         let balancingData = {}; 
         let splitWeightResults = { w1: null, w2: null }; 
+        let lastCalculationMode = 'N/A'; 
+        let lastProcessedLocations = []; 
+        let lastBalancingAction = 'add'; 
+        let vectorHitBoxes = []; 
+        let currentUser = null; // For Auth state
 
-        // *** NEW: Dark Mode Elements ***
+        // *** Dark Mode Elements ***
         const darkModeToggle = document.getElementById('darkModeToggle');
         const sunIcon = document.getElementById('sunIcon');
         const moonIcon = document.getElementById('moonIcon');
 
-        const rotorTypeImageSources = {
-            "Overhung": "https://i.ibb.co/r2gmqVyX/download.png",
-            "Centerhung": "https://i.ibb.co/Q7n6wPnp/download-1.png"
-        };
-        
-        const mainContentGrid = document.getElementById('main-content-grid');
+        // ... (Supabase) ...
+        const supabaseUrl = 'https://lgyladuiyezqccyjxqgn.supabase.co'; // <--- YOUR URL
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxneWxhZHVpeWV6cWNjeWp4cWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NDEyMTksImV4cCI6MjA3ODUxNzIxOX0.O-K3aJkcdvnj0k3ltu37AK3hrW2ibZCZbwVy9SDTBZg'; // <--- YOUR KEY
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // ... (Existing DOM Elements) ...
+        const authOverlay = document.getElementById('authOverlay');
+        const mainAppContainer = document.getElementById('mainAppContainer');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const toggleToSignup = document.getElementById('toggleToSignup');
+        const toggleToLogin = document.getElementById('toggleToLogin');
+        const authMessage = document.getElementById('authMessage');
+        const btnLogin = document.getElementById('btnLogin');
+        const btnSignup = document.getElementById('btnSignup');
+        const btnLogout = document.getElementById('btnLogout');
+        const currentUserDisplay = document.getElementById('currentUserDisplay');
+
+        // Other Elements
+        const rotorTypeImageSources = { "Overhung": "https://i.ibb.co/r2gmqVyX/download.png", "Centerhung": "https://i.ibb.co/Q7n6wPnp/download-1.png" };
         const polarPlotColumn = document.getElementById('polar-plot-column');
-        
         const tabStandardButton = document.getElementById('tabStandard');
         const tabKnownICButton = document.getElementById('tabKnownIC');
+        const tabTrimButton = document.getElementById('tabTrim'); 
         const tabSplittingButton = document.getElementById('tabSplitting');
         const tabAboutButton = document.getElementById('tabAbout');
-
         const contentStandardDiv = document.getElementById('contentStandard');
         const contentKnownICDiv = document.getElementById('contentKnownIC');
+        const contentTrimDiv = document.getElementById('contentTrim'); 
         const contentSplittingDiv = document.getElementById('contentSplitting');
         const contentAboutDiv = document.getElementById('contentAbout');
-        
         const numVanesInput = document.getElementById('numVanes');
         const rotDirCCWButton = document.getElementById('rotDirCCW');
         const rotDirCWButton = document.getElementById('rotDirCW');
@@ -582,27 +677,27 @@
         const rotorRPMInput = document.getElementById('rotorRPM'); 
         const rotorTypeSelect = document.getElementById('rotorTypeSelect');
         const rotorTypeImage = document.getElementById('rotorTypeImage');
-        
         const currentLocSplittingSpan = document.getElementById('currentLocSplitting');
         const plotLocationLabelSpan = document.getElementById('plotLocationLabel');
-
-        // --- TABLE BODIES (NEW) ---
         const standardBalancingTableBody = document.getElementById('standardBalancingTableBody');
         const knownIcTableBody = document.getElementById('knownIcTableBody');
-        
+        const trimBalancingTableBody = document.getElementById('trimBalancingTableBody'); 
         const trialWeightMassInput = document.getElementById('trialWeightMass');
         const trialWeightAngleInput = document.getElementById('trialWeightAngle');
         const calculateStandardButton = document.getElementById('calculateStandardButton');
-
         const calculateKnownICButton = document.getElementById('calculateKnownICButton');
-        
+        const trimMergeCheckbox = document.getElementById('trimMergeCheckbox');
+        const trimPreviousWeightInputs = document.getElementById('trimPreviousWeightInputs');
+        const trimPrevMassInput = document.getElementById('trimPrevMass');
+        const trimPrevAngleInput = document.getElementById('trimPrevAngle');
+        const calculateTrimButton = document.getElementById('calculateTrimButton');
+        const trimResultsDiv = document.getElementById('trimResults');
         const rotorWeightInput = document.getElementById('rotorWeight'); 
         const trialRadiusInput = document.getElementById('trialRadius'); 
         const suggestTrialWeightButton = document.getElementById('suggestTrialWeightButton');
         const suggestedTrialWeightResultP = document.getElementById('suggestedTrialWeightResult');
         const toggleTrialWeightSectionButton = document.getElementById('toggleTrialWeightSectionButton');
         const trialWeightSuggestionContainerDiv = document.getElementById('trialWeightSuggestionContainer');
-
         const resultsDisplayDiv = document.getElementById('resultsDisplay');
         const resultsTitle = document.getElementById('resultsTitle'); 
         const resultLocationSpan = document.getElementById('resultLocation');
@@ -617,7 +712,6 @@
         const predictedResidualsListSpan = document.getElementById('predictedResidualsList'); 
         const errorMessageDiv = document.getElementById('errorMessage');
         const errorTextSpan = document.getElementById('errorText');
-
         const splitWcMassInput = document.getElementById('splitWcMassInput');
         const splitWcAngleInput = document.getElementById('splitWcAngleInput');
         const splitNumHolesInput = document.getElementById('splitNumHolesInput');
@@ -629,23 +723,106 @@
         const splitWeight2MassSpan = document.getElementById('splitWeight2Mass');
         const splitWeight2AngleSpan = document.getElementById('splitWeight2Angle');
         const splitErrorMessageP = document.getElementById('splitErrorMessage');
-
-
         const canvas = document.getElementById('polarPlotCanvas');
         const ctx = canvas.getContext('2d');
-
+        const plotLegendDiv = document.getElementById('plotLegend');
         const equipmentNameInput = document.getElementById('equipmentName');
         const plantNameInput = document.getElementById('plantName');
         const reportDateInput = document.getElementById('reportDate');
-
         const printReportButton = document.getElementById('printReportButton');
         const exportWordButton = document.getElementById('exportWordButton'); 
         const saveDataButton = document.getElementById('saveDataButton');
         const loadDataButton = document.getElementById('loadDataButton');
         const resetFormButton = document.getElementById('resetFormButton');
 
+        // --- AUTHENTICATION LOGIC ---
         
-        // --- *** NEW: Dark Mode Logic *** ---
+        // Toggle Forms
+        toggleToSignup.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+            authMessage.classList.add('hidden');
+        });
+        toggleToLogin.addEventListener('click', () => {
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            authMessage.classList.add('hidden');
+        });
+
+        // Sign In
+        btnLogin.addEventListener('click', async () => {
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            authMessage.classList.add('hidden');
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                authMessage.textContent = error.message;
+                authMessage.classList.remove('hidden');
+            } else {
+                // Auth state listener will handle UI change
+            }
+        });
+
+        // Sign Up
+        btnSignup.addEventListener('click', async () => {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            authMessage.classList.add('hidden');
+
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                authMessage.textContent = error.message;
+                authMessage.classList.remove('hidden');
+            } else {
+                authMessage.textContent = "Registration successful! Please check your email to verify, or try logging in.";
+                authMessage.classList.remove('text-red-500');
+                authMessage.classList.add('text-green-500');
+                authMessage.classList.remove('hidden');
+            }
+        });
+
+        // Logout
+        btnLogout.addEventListener('click', async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) console.error('Error logging out:', error);
+            window.location.reload();
+        });
+
+        // Define your admin email here
+const ADMIN_EMAIL = 'souravbiswal50@gmail.com'; // <--- Change this to match your SQL
+
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        currentUser = session.user;
+        authOverlay.classList.add('hidden');
+        mainAppContainer.classList.remove('opacity-20', 'pointer-events-none');
+        currentUserDisplay.innerHTML = `<i class="fas fa-user-circle"></i> ${currentUser.email}`;
+
+        // UX Check: Hide "Save to Cloud" button if not admin
+        const saveButton = document.getElementById('saveToCloudButton');
+        if (currentUser.email !== ADMIN_EMAIL) {
+            saveButton.classList.add('hidden');
+        } else {
+            saveButton.classList.remove('hidden');
+        }
+
+    } else {
+        currentUser = null;
+        authOverlay.classList.remove('hidden');
+        mainAppContainer.classList.add('opacity-20', 'pointer-events-none');
+    }
+});
+
+        // --- *** Dark Mode Logic *** ---
         function setDarkMode(isDark) {
             if (isDark) {
                 document.documentElement.classList.add('dark');
@@ -658,7 +835,6 @@
                 sunIcon.classList.remove('hidden');
                 moonIcon.classList.add('hidden');
             }
-            // Redraw the plot with new colors
             drawPolarPlotBasedOnMode();
         }
 
@@ -667,7 +843,6 @@
             setDarkMode(!isDarkMode);
         });
 
-        // Set initial icon state on load
         if (document.documentElement.classList.contains('dark')) {
             sunIcon.classList.add('hidden');
             moonIcon.classList.remove('hidden');
@@ -676,6 +851,91 @@
             moonIcon.classList.add('hidden');
         }
 
+        // --- NEW Helper: Populates the form from a data object ---
+        function loadDataFromObject(loadedData) {
+            try {
+                // Restore header
+                equipmentNameInput.value = loadedData.header.equipmentName || '';
+                plantNameInput.value = loadedData.header.plantName || '';
+                reportDateInput.value = loadedData.header.reportDate || new Date().toISOString().split('T')[0];
+
+                // Restore details
+                numVanesInput.value = loadedData.details.numVanes || '12';
+                ratedPowerInput.value = loadedData.details.ratedPower || '';
+                rotorRPMInput.value = loadedData.details.rotorRPM || '';
+                rotorTypeSelect.value = loadedData.details.rotorType || '';
+                rotorTypeSelect.dispatchEvent(new Event('change'));
+
+                if (loadedData.details.rotationDirection === "CW") {
+                    rotDirCWButton.click();
+                } else {
+                    rotDirCCWButton.click();
+                }
+
+                // Restore suggestion inputs
+                rotorWeightInput.value = loadedData.suggestion.rotorWeight || '';
+                trialRadiusInput.value = loadedData.suggestion.trialRadius || '';
+
+                // Restore balancing data object
+                if (loadedData.balancingData) {
+                    balancingData = loadedData.balancingData;
+                }
+
+                // Restore Global Reporting State
+                if (loadedData.globalState) {
+                    lastCalculationMode = loadedData.globalState.lastCalculationMode || 'N/A';
+                    lastProcessedLocations = loadedData.globalState.lastProcessedLocations || [];
+                    lastBalancingAction = loadedData.globalState.lastBalancingAction || 'add';
+                    if(loadedData.globalState.measurementLocation) {
+                        measurementLocationSelect.value = loadedData.globalState.measurementLocation;
+                    }
+                } 
+
+                populateInputTables();
+                updateGlobalTrialWeightFields();
+                clearError();
+                
+                // Restore Action Radio Button
+                if (lastBalancingAction === 'remove') {
+                    document.getElementById('finalActionRemove').checked = true;
+                } else {
+                    document.getElementById('finalActionAdd').checked = true;
+                }
+                
+                // Show/Hide Results logic
+                const plotLoc = measurementLocationSelect.value;
+                if (balancingData[plotLoc] && balancingData[plotLoc].correctionMass !== null) {
+                     resultsDisplayDiv.classList.remove('hidden');
+                     const d = balancingData[plotLoc];
+                     correctionWeightMassSpan.textContent = d.correctionMass.toFixed(3);
+                     correctionWeightAngleSpan.textContent = d.correctionAngle.toFixed(1);
+                     document.getElementById('removalWeightMass').textContent = d.removalMass ? d.removalMass.toFixed(3) : '---';
+                     document.getElementById('removalWeightAngle').textContent = d.removalAngle ? d.removalAngle.toFixed(1) : '---';
+                     
+                     if (lastCalculationMode.includes('Trim')) {
+                        icResultsDiv.classList.add('hidden');
+                        if(trimResultsDiv) trimResultsDiv.classList.remove('hidden'); 
+                     } else {
+                        icResultsDiv.classList.remove('hidden');
+                        if(trimResultsDiv) trimResultsDiv.classList.add('hidden');
+                     }
+                } else {
+                    resultsDisplayDiv.classList.add('hidden');
+                }
+
+                if (splitResultsDisplay) splitResultsDisplay.classList.add('hidden');
+                
+                plotLocationLabelSpan.textContent = measurementLocationSelect.value;
+                currentLocSplittingSpan.textContent = measurementLocationSelect.value;
+                prefillSplittingInputs();
+                drawPolarPlotBasedOnMode();
+                
+                alert("Data loaded successfully!");
+            } catch (err) {
+                console.error("Error mapping data:", err);
+                alert("Error loading data structure.");
+            }
+        }
 
         // --- Helper Functions ---
         function toRadians(degrees) { return degrees * (Math.PI / 180); }
@@ -685,8 +945,16 @@
             if (angle < 0) angle += 360;
             return angle;
         }
+        function getInputValue(elementId, placeholder = "N/A") { 
+            const el = document.getElementById(elementId);
+            return (el && el.value) ? el.value : placeholder; 
+        }
+        function getSpanValue(elementId, placeholder = "---") { 
+            const el = document.getElementById(elementId);
+            return (el && el.textContent) ? el.textContent : placeholder;
+        }
 
-        // --- Robust Vector Class (Unchanged) ---
+        // --- Robust Vector Class ---
         class Vector {
             constructor(magnitude, angleDeg) {
                 this.magnitude = isNaN(parseFloat(magnitude)) ? 0 : parseFloat(magnitude);
@@ -723,21 +991,22 @@
             scale(scalar) { return Vector.fromComponents(this.x * scalar, this.y * scalar); }
         }
 
-        // --- NEW: Table Population and Data Sync ---
-
-        /**
-         * Reads data from the global `balancingData` object and fills the
-         * Standard and Known IC tables with inputs and values.
-         */
+        // --- Table Population and Data Sync ---
         function populateInputTables() {
             let stdHtml = '';
             let kicHtml = '';
+            let trimHtml = '';
 
             for (const loc of locations) {
                 const data = balancingData[loc];
                 const o_amp = data.originalAmp !== null ? data.originalAmp : '';
                 const o_ang = data.originalAngle !== null ? data.originalAngle : '';
+                const f_amp = data.finalAmp !== null ? data.finalAmp : ''; 
+                const f_ang = data.finalAngle !== null ? data.finalAngle : '';
                 
+                const icValMag = (data.calculatedICMag !== null) ? data.calculatedICMag.toFixed(3) : (data.knownICMag !== null ? data.knownICMag : '');
+                const icValAng = (data.calculatedICAngle !== null) ? data.calculatedICAngle.toFixed(1) : (data.knownICAngle !== null ? data.knownICAngle : '');
+
                 // Standard Table Row
                 stdHtml += `
                     <tr class="align-middle">
@@ -749,6 +1018,8 @@
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_ot_phase_${loc}" value="${data.trialRunAngle || ''}" data-loc="${loc}" data-prop="trialRunAngle"></td>
                         <td class="px-2 py-1.5 text-center"><span class="table-output" id="std_ic_mag_${loc}">${data.calculatedICMag ? data.calculatedICMag.toFixed(3) : '---'}</span></td>
                         <td class="px-2 py-1.5 text-center"><span class="table-output" id="std_ic_ang_${loc}">${data.calculatedICAngle ? data.calculatedICAngle.toFixed(1) : '---'}</span></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_f_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_f_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
                     </tr>
                 `;
 
@@ -761,28 +1032,36 @@
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_o_phase_${loc}" value="${o_ang}" data-loc="${loc}" data-prop="originalAngle"></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_ic_mag_${loc}" value="${data.knownICMag || (data.calculatedICMag ? data.calculatedICMag.toFixed(3) : '')}" data-loc="${loc}" data-prop="knownICMag"></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_ic_ang_${loc}" value="${data.knownICAngle || (data.calculatedICAngle ? data.calculatedICAngle.toFixed(1) : '')}" data-loc="${loc}" data-prop="knownICAngle"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_f_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_f_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
+                    </tr>
+                `;
+
+                // Trim Table Row
+                trimHtml += `
+                    <tr class="align-middle">
+                        <td class="px-2 py-1.5 text-center"><input type="checkbox" class="loc-checkbox-trim h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" data-location="${loc}"></td>
+                        <td class="px-2 py-1.5 font-medium">${loc}</td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_mag_${loc}" value="${icValMag}" data-loc="${loc}" data-prop="knownICMag"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_ang_${loc}" value="${icValAng}" data-loc="${loc}" data-prop="knownICAngle"></td>
                     </tr>
                 `;
             }
             standardBalancingTableBody.innerHTML = stdHtml;
             knownIcTableBody.innerHTML = kicHtml;
+            trimBalancingTableBody.innerHTML = trimHtml; 
             
             const stdHeaderCB = document.getElementById('selectAllStandard');
             const kicHeaderCB = document.getElementById('selectAllKnownIC');
-            if(stdHeaderCB) {
-                stdHeaderCB.checked = false;
-                stdHeaderCB.indeterminate = false;
-            }
-            if(kicHeaderCB) {
-                kicHeaderCB.checked = false;
-                kicHeaderCB.indeterminate = false;
-            }
+            const trimHeaderCB = document.getElementById('selectAllTrim'); 
+
+            if(stdHeaderCB) { stdHeaderCB.checked = false; stdHeaderCB.indeterminate = false; }
+            if(kicHeaderCB) { kicHeaderCB.checked = false; kicHeaderCB.indeterminate = false; }
+            if(trimHeaderCB) { trimHeaderCB.checked = false; trimHeaderCB.indeterminate = false; }
         }
 
-        /**
-         * Updates the read-only IC values in the Standard table
-         * after a calculation.
-         */
         function updateResultsTables() {
             for (const loc of locations) {
                 const data = balancingData[loc];
@@ -793,10 +1072,6 @@
             }
         }
 
-        /**
-         * Live-updates the `balancingData` object when a user types
-         * in any of the tables.
-         */
         function storeTableDataToModel(e) {
             if (e.target.tagName !== 'INPUT' || !e.target.dataset.loc) return;
 
@@ -807,14 +1082,35 @@
             if (prop && loc && balancingData[loc]) {
                 balancingData[loc][prop] = !isNaN(value) ? value : null;
                 
-                // --- Sync data between tables ---
-                // If O/P is changed in Standard tab, update Known IC tab
                 if (prop === 'originalAmp' || prop === 'originalAngle') {
                     const otherInputId = e.target.id.startsWith('std_') 
                         ? e.target.id.replace('std_', 'kic_') 
                         : e.target.id.replace('kic_', 'std_');
                     const otherInput = document.getElementById(otherInputId);
                     if (otherInput) otherInput.value = e.target.value;
+                }
+                
+                if (prop === 'finalAmp' || prop === 'finalAngle') {
+                    const inputsToUpdate = [
+                        `std_f_${prop === 'finalAmp' ? 'amp' : 'phase'}_${loc}`,
+                        `kic_f_${prop === 'finalAmp' ? 'amp' : 'phase'}_${loc}`,
+                        `trim_res_${prop === 'finalAmp' ? 'amp' : 'phase'}_${loc}`
+                    ];
+                    inputsToUpdate.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && el !== e.target) el.value = e.target.value;
+                    });
+                }
+
+                if (prop === 'knownICMag' || prop === 'knownICAngle') {
+                     const inputsToUpdate = [
+                        `kic_ic_${prop === 'knownICMag' ? 'mag' : 'ang'}_${loc}`,
+                        `trim_ic_${prop === 'knownICMag' ? 'mag' : 'ang'}_${loc}`
+                    ];
+                     inputsToUpdate.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && el !== e.target) el.value = e.target.value;
+                    });
                 }
             }
         }
@@ -830,6 +1126,8 @@
                     knownICMag: null, knownICAngle: null,
                     calculatedICMag: null, calculatedICAngle: null, 
                     correctionMass: null, correctionAngle: null,
+                    removalMass: null, removalAngle: null,
+                    finalAmp: null, finalAngle: null, 
                     lastOriginalForPlot: null, 
                 };
             });
@@ -857,6 +1155,8 @@
             resultsDisplayDiv.classList.add('hidden');
             predictedResidualsDisplayDiv.classList.add('hidden'); 
             errorMessageDiv.classList.add('hidden');
+            
+            if(trimResultsDiv) trimResultsDiv.classList.add('hidden');
 
             equipmentNameInput.value = '';
             plantNameInput.value = '';
@@ -873,7 +1173,6 @@
             document.getElementById('trialWeightRemovedCheckbox').checked = false;
             document.getElementById('strategyRemove').checked = true;
 
-            // NEW: Populate tables
             populateInputTables();
         }
         
@@ -914,24 +1213,21 @@
         function resetAllFields() {
             initializeData(); 
             updateGlobalTrialWeightFields();
-
             resultsDisplayDiv.classList.add('hidden');
             errorMessageDiv.classList.add('hidden');
             icMagnitudeSpan.textContent = '---';
             icAngleSpan.textContent = '---';
             correctionWeightMassSpan.textContent = '---';
             correctionWeightAngleSpan.textContent = '---';
-            
             drawPolarPlotBasedOnMode();
             switchTab(tabStandardButton, contentStandardDiv); 
-            console.log("All fields reset.");
         }
 
 
         // --- Event Listeners ---
         function switchTab(activeTabButton, activeContentDiv) {
-            [tabStandardButton, tabKnownICButton, tabSplittingButton, tabAboutButton].forEach(btn => btn.classList.remove('active'));
-            [contentStandardDiv, contentKnownICDiv, contentSplittingDiv, contentAboutDiv].forEach(content => content.classList.add('hidden'));
+            [tabStandardButton, tabKnownICButton, tabTrimButton, tabSplittingButton, tabAboutButton].forEach(btn => btn.classList.remove('active'));
+            [contentStandardDiv, contentKnownICDiv, contentTrimDiv, contentSplittingDiv, contentAboutDiv].forEach(content => content.classList.add('hidden'));
             
             if (activeTabButton.id === 'tabAbout') {
                 polarPlotColumn.classList.add('hidden');
@@ -946,13 +1242,13 @@
             if (activeTabButton.id !== 'tabSplitting' && splitResultsDisplay) {
                 splitResultsDisplay.classList.add('hidden');
             }
-            if (activeTabButton.id !== 'tabStandard' && activeTabButton.id !== 'tabKnownIC') {
+            if (activeTabButton.id !== 'tabStandard' && activeTabButton.id !== 'tabKnownIC' && activeTabButton.id !== 'tabTrim') {
                 resultsDisplayDiv.classList.add('hidden');
             }
             
             drawPolarPlotBasedOnMode();
         }
-
+        
         tabStandardButton.addEventListener('click', () => switchTab(tabStandardButton, contentStandardDiv));
         tabKnownICButton.addEventListener('click', () => {
             switchTab(tabKnownICButton, contentKnownICDiv);
@@ -969,6 +1265,15 @@
                     if (icAngInput) icAngInput.value = data.calculatedICAngle.toFixed(1);
                     balancingData[loc].knownICAngle = data.calculatedICAngle;
                 }
+            }
+        });
+        tabTrimButton.addEventListener('click', () => {
+            switchTab(tabTrimButton, contentTrimDiv);
+            const plotLoc = measurementLocationSelect.value;
+            const data = balancingData[plotLoc];
+             if (data.correctionMass !== null) {
+                trimPrevMassInput.value = data.correctionMass.toFixed(3);
+                trimPrevAngleInput.value = data.correctionAngle.toFixed(1);
             }
         });
         tabSplittingButton.addEventListener('click', () => {
@@ -1038,13 +1343,21 @@
             if (splitNumHolesInput) splitNumHolesInput.value = numVanesInput.value; 
             drawPolarPlotBasedOnMode();
         });
+        
+        trimMergeCheckbox.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                trimPreviousWeightInputs.classList.remove('hidden');
+            } else {
+                trimPreviousWeightInputs.classList.add('hidden');
+            }
+        });
 
 
-        // --- Event Delegation for Table Inputs ---
+        // --- Event Delegation ---
         standardBalancingTableBody.addEventListener('change', storeTableDataToModel);
         knownIcTableBody.addEventListener('change', storeTableDataToModel);
+        trimBalancingTableBody.addEventListener('change', storeTableDataToModel);
         
-        // Global trial weight listener
         [trialWeightMassInput, trialWeightAngleInput].forEach(input => {
             if (input) input.addEventListener('change', () => {
                 balancingData.trialWeight.mass = parseFloat(trialWeightMassInput.value) || null;
@@ -1077,18 +1390,14 @@
 
         // --- Calculation Logic ---
 
-        // *** MODIFIED: Added 'baseVectorType' parameter to correctly calculate residuals ***
         function displayPredictedResiduals(cwVector, icData, processedLocations, baseVectorType = 'original') {
             let residualsText = [];
             for (const loc of processedLocations) {
                 const data = balancingData[loc];
-                // *** MODIFIED: Select 'O' or 'O+T' based on the strategy ***
                 const baseAmp = (baseVectorType === 'trial') ? data.trialRunAmp : data.originalAmp;
                 const baseAngle = (baseVectorType === 'trial') ? data.trialRunAngle : data.originalAngle;
-                
-                const O_i = new Vector(baseAmp, baseAngle); // This is now the correct base vector
+                const O_i = new Vector(baseAmp, baseAngle);
                 const alpha_i = icData[loc];
-
                 if (O_i.magnitude > 1e-9 && alpha_i) {
                     const predictedChange = alpha_i.multiply(cwVector);
                     const R_i = O_i.add(predictedChange);
@@ -1101,6 +1410,7 @@
             predictedResidualsDisplayDiv.classList.remove('hidden');
         }
 
+        // *** STANDARD CALCULATION ***
         calculateStandardButton.addEventListener('click', () => {
             clearError();
             resultsDisplayDiv.classList.add('hidden');
@@ -1167,11 +1477,25 @@
                 resultLocationSpan.textContent = `${locsToProcess.length} Locations`;
             }
             
-            correctionWeightLabel.textContent = (correctionStrategy === 'keep') ? "Additional Correction Weight (Wc):" : "Total Correction Weight (Wc):";
+            lastCalculationMode = 'Standard (with Trial Run)';
+            lastProcessedLocations = locsToProcess;
+
+            const CW_remove_vec = CW_vec.negate();
+            const removeMass = CW_remove_vec.magnitude;
+            const removeAngle = CW_remove_vec.angleDeg;
+            
             const corrMass = CW_vec.magnitude, corrAngle = CW_vec.angleDeg;
-            const plotLocation = measurementLocationSelect.value;
+            const plotLocation = measurementLocationSelect.value; 
+            
             balancingData[plotLocation].correctionMass = corrMass;
             balancingData[plotLocation].correctionAngle = corrAngle;
+            balancingData[plotLocation].removalMass = removeMass;
+            balancingData[plotLocation].removalAngle = removeAngle;
+
+            const addLabel = (correctionStrategy === 'keep') ? "Add Weight:" : "Total Correction (Wc):";
+            const removeLabel = (correctionStrategy === 'keep') ? "OR Remove:" : "OR Remove Total:";
+            correctionWeightLabel.textContent = addLabel;
+            document.getElementById('removalWeightLabel').textContent = removeLabel;
 
             const currentIC = allInfluenceCoefficients[plotLocation]; 
             if (currentIC && isFinite(currentIC.magnitude)) {
@@ -1185,9 +1509,13 @@
 
             correctionWeightMassSpan.textContent = corrMass.toFixed(3);
             correctionWeightAngleSpan.textContent = corrAngle.toFixed(1);
+
+            document.getElementById('removalWeightMass').textContent = removeMass.toFixed(3);
+            document.getElementById('removalWeightAngle').textContent = removeAngle.toFixed(1);
+            document.getElementById('correctionWeightRemovalResults').classList.remove('hidden');
+
             resultsDisplayDiv.classList.remove('hidden');
             
-            // *** MODIFIED: Pass the correct base vector type ***
             const baseType = (correctionStrategy === 'keep') ? 'trial' : 'original';
             displayPredictedResiduals(CW_vec, allInfluenceCoefficients, locsToProcess, baseType);
 
@@ -1196,6 +1524,7 @@
             drawPolarPlotBasedOnMode();
         });
 
+        // *** KNOWN IC CALCULATION ***
         calculateKnownICButton.addEventListener('click', () => {
             clearError();
             resultsDisplayDiv.classList.add('hidden');
@@ -1246,21 +1575,145 @@
                 resultLocationSpan.textContent = `${locsToProcess.length} Locations`;
             }
             
-            correctionWeightLabel.textContent = "Correction Weight (Wc):";
+            lastCalculationMode = 'Known Influence Coefficient';
+            lastProcessedLocations = locsToProcess;
+
+            const CW_remove_vec = CW_vec.negate();
+            const removeMass = CW_remove_vec.magnitude;
+            const removeAngle = CW_remove_vec.angleDeg;
+
             const corrMass = CW_vec.magnitude, corrAngle = CW_vec.angleDeg;
-            const plotLocation = measurementLocationSelect.value;
+            const plotLocation = measurementLocationSelect.value; 
+
             balancingData[plotLocation].correctionMass = corrMass;
             balancingData[plotLocation].correctionAngle = corrAngle;
-            
+            balancingData[plotLocation].removalMass = removeMass;
+            balancingData[plotLocation].removalAngle = removeAngle;
+
+            correctionWeightLabel.textContent = "Correction Weight (Wc):";
+            document.getElementById('removalWeightLabel').textContent = "OR Remove Weight:";
+
             icResultsDiv.classList.add('hidden');
+
             correctionWeightMassSpan.textContent = corrMass.toFixed(3);
             correctionWeightAngleSpan.textContent = corrAngle.toFixed(1);
+
+            document.getElementById('removalWeightMass').textContent = removeMass.toFixed(3);
+            document.getElementById('removalWeightAngle').textContent = removeAngle.toFixed(1);
+            document.getElementById('correctionWeightRemovalResults').classList.remove('hidden');
+            
             resultsDisplayDiv.classList.remove('hidden');
             
-            // *** MODIFIED: Pass 'original' as this tab *always* uses the O values ***
             displayPredictedResiduals(CW_vec, allInfluenceCoefficients, locsToProcess, 'original');
 
             prefillSplittingInputs();
+            drawPolarPlotBasedOnMode();
+        });
+        
+        // *** TRIM CALCULATION (MULTI-POINT) ***
+        calculateTrimButton.addEventListener('click', () => {
+            clearError();
+            trimResultsDiv.classList.add('hidden');
+
+            const checkedRows = document.querySelectorAll('.loc-checkbox-trim:checked');
+            if (checkedRows.length === 0) { 
+                displayError("Select at least one location from the table to calculate Trim."); 
+                return; 
+            }
+            const locsToProcess = Array.from(checkedRows).map(cb => cb.dataset.location);
+
+            let missingData = false;
+            let sum_Res_alpha_conjugate = Vector.fromComponents(0, 0);
+            let sum_alpha_mag_squared = 0;
+            let singleLocResidual = null;
+            let singleLocIC = null;
+
+            for (const loc of locsToProcess) {
+                const data = balancingData[loc];
+                const resAmp = data.finalAmp;
+                const resAng = data.finalAngle;
+                const icMag = (data.calculatedICMag !== null && isFinite(data.calculatedICMag)) ? data.calculatedICMag : data.knownICMag;
+                const icAng = (data.calculatedICAngle !== null && isFinite(data.calculatedICAngle)) ? data.calculatedICAngle : data.knownICAngle;
+
+                if (resAmp === null || resAng === null || icMag === null || icAng === null) {
+                    missingData = true;
+                    displayError(`Missing data for ${loc}. Please ensure Residuals and ICs are populated.`);
+                    break;
+                }
+                if (icMag <= 1e-9) {
+                     missingData = true;
+                     displayError(`IC Magnitude for ${loc} is zero. Cannot calculate.`);
+                     break;
+                }
+
+                const Res_vec = new Vector(resAmp, resAng);
+                const IC_vec = new Vector(icMag, icAng);
+                sum_Res_alpha_conjugate = sum_Res_alpha_conjugate.add(Res_vec.multiply(IC_vec.conjugate));
+                sum_alpha_mag_squared += IC_vec.magnitudeSquared;
+                
+                singleLocResidual = Res_vec;
+                singleLocIC = IC_vec;
+                
+                balancingData[loc].lastOriginalForPlot = Res_vec; 
+            }
+
+            if (missingData) return;
+
+            let W_trim = null;
+
+            if (locsToProcess.length === 1) {
+                W_trim = singleLocResidual.negate().divide(singleLocIC);
+            } else {
+                if (Math.abs(sum_alpha_mag_squared) < 1e-12) {
+                    displayError("Sum of IC magnitudes is zero."); return;
+                }
+                W_trim = sum_Res_alpha_conjugate.negate().scale(1 / sum_alpha_mag_squared);
+            }
+
+            document.getElementById('trimMassResult').textContent = W_trim.magnitude.toFixed(3);
+            document.getElementById('trimAngleResult').textContent = W_trim.angleDeg.toFixed(1);
+            trimResultsDiv.classList.remove('hidden');
+
+            const trimSoloDiv = document.getElementById('trimSoloResult');
+            const trimMergedDiv = document.getElementById('trimMergedResult');
+
+            if (trimMergeCheckbox.checked) {
+                const prevMass = parseFloat(trimPrevMassInput.value);
+                const prevAngle = parseFloat(trimPrevAngleInput.value);
+
+                if (!isNaN(prevMass) && !isNaN(prevAngle)) {
+                    const W_prev = new Vector(prevMass, prevAngle);
+                    const W_total = W_prev.add(W_trim);
+
+                    document.getElementById('trimTotalMassResult').textContent = W_total.magnitude.toFixed(3);
+                    document.getElementById('trimTotalAngleResult').textContent = W_total.angleDeg.toFixed(1);
+                    
+                    trimSoloDiv.classList.add('opacity-50'); 
+                    trimMergedDiv.classList.remove('hidden');
+                    
+                    const plotLoc = measurementLocationSelect.value; 
+                    balancingData[plotLoc].correctionMass = W_total.magnitude;
+                    balancingData[plotLoc].correctionAngle = W_total.angleDeg;
+                    const W_remove = W_total.negate();
+                    balancingData[plotLoc].removalMass = W_remove.magnitude;
+                    balancingData[plotLoc].removalAngle = W_remove.angleDeg;
+                }
+            } else {
+                trimMergedDiv.classList.add('hidden');
+                trimSoloDiv.classList.remove('opacity-50');
+                
+                const plotLoc = measurementLocationSelect.value; 
+                balancingData[plotLoc].correctionMass = W_trim.magnitude;
+                balancingData[plotLoc].correctionAngle = W_trim.angleDeg;
+                const W_remove = W_trim.negate();
+                balancingData[plotLoc].removalMass = W_remove.magnitude;
+                balancingData[plotLoc].removalAngle = W_remove.angleDeg;
+            }
+
+            lastCalculationMode = 'Trim Balance (Multi-Point)';
+            lastProcessedLocations = locsToProcess;
+
+            plotLocationLabelSpan.textContent = measurementLocationSelect.value;
             drawPolarPlotBasedOnMode();
         });
 
@@ -1269,8 +1722,7 @@
             const currentLocation = measurementLocationSelect.value;
             currentLocSplittingSpan.textContent = currentLocation;
             const data = balancingData[currentLocation];
-            
-            if (data && data.correctionMass !== null && data.correctionAngle !== null && isFinite(data.correctionMass) && isFinite(data.correctionAngle) ) {
+            if (data && data.correctionMass !== null && isFinite(data.correctionMass)) {
                 splitWcMassInput.value = data.correctionMass.toFixed(3);
                 splitWcAngleInput.value = data.correctionAngle.toFixed(1);
             } else {
@@ -1322,7 +1774,6 @@
         });
 
 
-        // --- Polar Plotting ---
         function drawPolarPlotBasedOnMode() {
             const currentModeTab = document.querySelector('.tab-button.active').id;
             const currentLocation = measurementLocationSelect.value;
@@ -1331,21 +1782,23 @@
 
             if (data.originalAmp !== null && data.originalAngle !== null) { O_vec = new Vector(data.originalAmp, data.originalAngle); } 
             else if (data.lastOriginalForPlot) { O_vec = data.lastOriginalForPlot; }
+            // Ensure vector instance
             if (O_vec && !(O_vec instanceof Vector) && O_vec.magnitude !== undefined) { O_vec = new Vector(O_vec.magnitude, O_vec.angleDeg); }
             if (data.correctionMass !== null && data.correctionAngle !== null && isFinite(data.correctionMass)) { Wc_vec_plot = new Vector(data.correctionMass, data.correctionAngle); }
 
+            // Determine which vectors are active based on tab
             if (currentModeTab === 'tabStandard') {
                 if (O_vec && data.trialRunAmp !== null && data.trialRunAngle !== null) {
-                     OT_vec = new Vector(data.trialRunAmp, data.trialRunAngle);
-                     T_eff_vec = OT_vec.subtract(O_vec);
+                        OT_vec = new Vector(data.trialRunAmp, data.trialRunAngle);
+                        T_eff_vec = OT_vec.subtract(O_vec);
                 }
                 if (Wc_vec_plot) {
                     const correctionStrategy = document.querySelector('input[name="correctionStrategy"]:checked').value;
-                     if(correctionStrategy === 'keep' && OT_vec){ Minus_O_vec_plot = OT_vec.negate(); } 
-                     else if (O_vec) { Minus_O_vec_plot = O_vec.negate(); }
+                        if(correctionStrategy === 'keep' && OT_vec){ Minus_O_vec_plot = OT_vec.negate(); } 
+                        else if (O_vec) { Minus_O_vec_plot = O_vec.negate(); }
                 }
-            } else if (currentModeTab === 'tabKnownIC') {
-                 if (O_vec && Wc_vec_plot) { Minus_O_vec_plot = O_vec.negate(); }
+            } else if (currentModeTab === 'tabKnownIC' || currentModeTab === 'tabTrim') {
+                    if (O_vec && Wc_vec_plot) { Minus_O_vec_plot = O_vec.negate(); }
             } else if (currentModeTab === 'tabSplitting') {
                 const wcMassToSplit = parseFloat(splitWcMassInput.value), wcAngleToSplit = parseFloat(splitWcAngleInput.value);
                 if (!isNaN(wcMassToSplit) && !isNaN(wcAngleToSplit) && wcMassToSplit > 0) { Wc_vec_plot = new Vector(wcMassToSplit, wcAngleToSplit); }
@@ -1356,250 +1809,405 @@
             drawPolarPlot(O_vec, OT_vec, T_eff_vec, Wc_vec_plot, Minus_O_vec_plot, Ws1_vec, Ws2_vec);
         }
         
+        // --- UPDATED: Draw Polar Plot Function (Clean + Interactive) ---
         function drawPolarPlot(O_vec, OT_vec, T_eff_vec, Wc_vec_plot, Minus_O_vec_plot, Ws1_vec, Ws2_vec) {
+            vectorHitBoxes = []; // Reset hitboxes
             const numVanesPlot = parseInt(numVanesInput.value) || 12;
             const rotationDir = rotationDirectionInput.value; 
             const isDarkMode = document.documentElement.classList.contains('dark');
 
             // Colors
-            // *** GEMINI'S MODIFICATION (from previous step): Changed Day Mode colors to gray for better contrast ***
-            const gridColor = isDarkMode ? "#4B5563" : "#D1D5DB"; // gray-600 / gray-300
-            const gridColorStrong = isDarkMode ? "#6B7280" : "#9CA3AF"; // gray-500 / gray-400
-            const labelColor = isDarkMode ? "#D1D5DB" : "#374151"; // gray-300 / gray-700
-            const vaneLabelColor = isDarkMode ? "#9CA3AF" : "#6B7280"; // gray-400 / gray-500
-            const bgColor = isDarkMode ? "#1F2937" : "#ffffff"; // gray-800 / white
-            const tachoColor = isDarkMode ? "#2DD4BF" : "#059669"; // teal-400 / green-600
-            
-            const canvasWidth = canvas.clientWidth;
-            if (canvasWidth === 0) return;
-            const canvasHeight = canvas.clientHeight; 
-            
-            canvas.width = canvasWidth; 
-            canvas.height = canvasHeight;
+            const gridColor = isDarkMode ? "#4B5563" : "#D1D5DB"; 
+            const labelColor = isDarkMode ? "#D1D5DB" : "#374151"; 
+            const vaneLabelColor = isDarkMode ? "#9CA3AF" : "#6B7280"; 
+            const bgColor = isDarkMode ? "#1F2937" : "#ffffff"; 
+            const colorWc = isDarkMode ? "#FDBA74" : "orange"; 
+            const colorWs1 = isDarkMode ? "#FDE047" : "#FFC107"; 
+            const colorWs2 = isDarkMode ? "#A8A29E" : "#795548"; 
+            const hsColor = isDarkMode ? "#F87171" : "red";
+            const heavySColor = isDarkMode ? "#93C5FD" : "darkblue";
 
+            // 1. Setup Canvas - FORCE SQUARE ASPECT RATIO to fix cropping
+            const containerWidth = document.getElementById('polarPlotContainer').clientWidth;
+            canvas.width = containerWidth;
+            canvas.height = containerWidth; // Make height equal width for a perfect square
+            
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const plotRadius = Math.min(centerX, centerY) * 0.80; 
+            // Reduced radius to 75% to prevent top/bottom cropping of labels/dots
+            const plotRadius = Math.min(centerX, centerY) * 0.75; 
 
-            let scaleDeterminingAmplitude = 10.0; 
-            const vibrationAmps = [];
-            if (O_vec && O_vec.magnitude > 1e-9) vibrationAmps.push(O_vec.magnitude);
-            if (OT_vec && OT_vec.magnitude > 1e-9) vibrationAmps.push(OT_vec.magnitude);
-            if (T_eff_vec && T_eff_vec.magnitude > 1e-9) vibrationAmps.push(T_eff_vec.magnitude);
-            if (vibrationAmps.length > 0) { scaleDeterminingAmplitude = Math.max(...vibrationAmps, scaleDeterminingAmplitude); }
-            
-            const scale = plotRadius / scaleDeterminingAmplitude;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = bgColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const numCircles = 4;
+            // 2. Scaling Logic
+            let scaleDeterminingAmplitude = 1.0; 
+            const vibrationAmps = [];
+            if (O_vec && O_vec.magnitude > 1e-9) vibrationAmps.push(O_vec.magnitude);
+            if (OT_vec && OT_vec.magnitude > 1e-9) vibrationAmps.push(OT_vec.magnitude);
+            if (T_eff_vec && T_eff_vec.magnitude > 1e-9) vibrationAmps.push(T_eff_vec.magnitude);
+            if (vibrationAmps.length > 0) { scaleDeterminingAmplitude = Math.max(...vibrationAmps); }
+            // Ensure scale isn't too small if values are tiny
+            if (scaleDeterminingAmplitude < 0.1) scaleDeterminingAmplitude = 1.0;
+
+            const scale = plotRadius / scaleDeterminingAmplitude;
+
+            // 3. Draw Grid (Circles)
             ctx.strokeStyle = gridColor;
             ctx.fillStyle = labelColor;
-            ctx.font = `${Math.max(10, canvasWidth / 45)}px Arial`;
+            ctx.font = "10px Arial";
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            const numCircles = 4;
             for (let i = 1; i <= numCircles; i++) {
                 const r = (plotRadius / numCircles) * i;
                 ctx.beginPath(); ctx.arc(centerX, centerY, r, 0, 2 * Math.PI); ctx.stroke();
-                const amplitudeValue = (scaleDeterminingAmplitude / numCircles) * i; 
-                const labelAngleRad = toRadians(-45); 
-                const labelX = centerX + r * Math.cos(labelAngleRad) + (canvasWidth > 300 ? 5 : 2);
-                const labelY = centerY - r * Math.sin(labelAngleRad) + (canvasWidth > 300 ? 5 : 2);
-                ctx.fillText(amplitudeValue.toFixed(scaleDeterminingAmplitude > 10 ? 1 : 2), labelX, labelY);
+                // Draw scale text nicely on the 45 degree line
+                const val = (scaleDeterminingAmplitude / numCircles) * i;
+                const labelX = centerX + r * 0.707; // cos(45)
+                const labelY = centerY - r * 0.707; // sin(45)
+                ctx.clearRect(labelX - 10, labelY - 6, 20, 12); // Clear background for text
+                ctx.fillText(val.toFixed(1), labelX, labelY);
             }
 
-            ctx.strokeStyle = gridColor;
+            // 4. Draw Vanes/Angles
             const angleStep = 360 / numVanesPlot;
             for (let i = 0; i < numVanesPlot; i++) {
-                const actualAngleRad = toRadians(i * angleStep); 
-                const xEnd = centerX + plotRadius * Math.cos(actualAngleRad);
-                const yEnd = centerY - plotRadius * Math.sin(actualAngleRad);
+                const rad = toRadians(i * angleStep);
+                const xEnd = centerX + plotRadius * Math.cos(rad);
+                const yEnd = centerY - plotRadius * Math.sin(rad);
+                ctx.globalAlpha = 0.3; // Faint lines
                 ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(xEnd, yEnd); ctx.stroke();
+                ctx.globalAlpha = 1.0;
+                
+                // Vane Labels
                 let vaneLabel = (rotationDir === "CW") ? i : ((i === 0) ? 0 : (numVanesPlot - i));
-                const labelRadiusOuter = plotRadius + (canvasWidth > 300 ? 12 : 8);
-                const lx = centerX + labelRadiusOuter * Math.cos(actualAngleRad);
-                const ly = centerY - labelRadiusOuter * Math.sin(actualAngleRad);
+                const lx = centerX + (plotRadius + 15) * Math.cos(rad);
+                const ly = centerY - (plotRadius + 15) * Math.sin(rad);
                 ctx.fillStyle = vaneLabelColor;
-                ctx.font = `${Math.max(8, canvasWidth / 50)}px Arial`;
+                ctx.font = "11px Arial";
                 ctx.fillText(vaneLabel, lx, ly);
             }
-
-            const anglesToLabel = [0, 90, 180, 270];
-            ctx.strokeStyle = gridColorStrong;
-            ctx.lineWidth = 1.5;
-            anglesToLabel.forEach(angle => {
-                const rad = toRadians(angle);
-                ctx.beginPath(); ctx.moveTo(centerX, centerY);
-                ctx.lineTo(centerX + plotRadius * Math.cos(rad), centerY - plotRadius * Math.sin(rad));
-                ctx.stroke();
-                const R_angle_label = plotRadius + (canvasWidth > 300 ? 25 : 18);
-                const x = centerX + R_angle_label * Math.cos(rad); const y = centerY - R_angle_label * Math.sin(rad);
-                ctx.fillStyle = labelColor;
-                ctx.font = `bold ${Math.max(10, canvasWidth / 45)}px Arial`;
-                ctx.fillText(angle + "\u00B0", x, y);
-            });
-            ctx.lineWidth = 1;
-
-            const tachoRadius = plotRadius + (canvasWidth > 300 ? 5 : 3);
-            const tachoOuterRadius = tachoRadius + (canvasWidth > 300 ? 8 : 5);
-            ctx.beginPath(); ctx.moveTo(centerX + tachoRadius, centerY); ctx.lineTo(centerX + tachoOuterRadius, centerY);
-            ctx.strokeStyle = tachoColor; ctx.lineWidth = 2; ctx.stroke();
-            ctx.beginPath(); ctx.arc(centerX + tachoOuterRadius + (canvasWidth > 300 ? 3 : 2), centerY, (canvasWidth > 300 ? 3 : 2), 0, 2 * Math.PI);
-            ctx.fillStyle = tachoColor; ctx.fill();
             
-            let o_vec_canvas_endX = null, o_vec_canvas_endY = null;
+            // 5. Draw Vectors (NO TEXT on plot, just lines)
+            let o_endX, o_endY; // To chain T_eff if needed
+
             if (O_vec && O_vec.magnitude > 1e-9) {
-                drawSingleVector(ctx, O_vec, isDarkMode ? "#60A5FA" : "blue", "O", centerX, centerY, scale, canvasWidth); // blue-400 / blue
-                let o_plotAngleRad = O_vec.angleRad;
-                if (rotationDir === "CCW" && O_vec.angleDeg !== 0) { o_plotAngleRad = toRadians(normalizeAngle(360 - O_vec.angleDeg)); }
-                o_vec_canvas_endX = centerX + O_vec.magnitude * Math.cos(o_plotAngleRad) * scale;
-                o_vec_canvas_endY = centerY - O_vec.magnitude * Math.sin(o_plotAngleRad) * scale;
+                const res = drawSingleVector(ctx, O_vec, isDarkMode ? "#60A5FA" : "blue", "Original (O)", centerX, centerY, scale, canvas.width);
+                o_endX = res.endX; o_endY = res.endY;
             }
-            if (OT_vec && OT_vec.magnitude > 1e-9) { drawSingleVector(ctx, OT_vec, isDarkMode ? "#F87171" : "red", "O+T", centerX, centerY, scale, canvasWidth); } // red-400 / red
+            if (OT_vec && OT_vec.magnitude > 1e-9) { 
+                drawSingleVector(ctx, OT_vec, isDarkMode ? "#F87171" : "red", "Trial (O+T)", centerX, centerY, scale, canvas.width); 
+            } 
             if (T_eff_vec && T_eff_vec.magnitude > 1e-9) {
-                drawSingleVector(ctx, T_eff_vec, isDarkMode ? "#4ADE80" : "green", "T_eff", centerX, centerY, scale, canvasWidth, o_vec_canvas_endX, o_vec_canvas_endY); // green-400 / green
+                // T_eff starts where O ends
+                drawSingleVector(ctx, T_eff_vec, isDarkMode ? "#4ADE80" : "green", "Effective (T_eff)", centerX, centerY, scale, canvas.width, o_endX, o_endY); 
             }
             if (Minus_O_vec_plot && Minus_O_vec_plot.magnitude > 1e-9) { 
-                const label = correctionWeightLabel.textContent.includes("Additional") ? '-(O+T)' : '-O';
-                drawSingleVector(ctx, Minus_O_vec_plot, isDarkMode ? "#C084FC" : "purple", label, centerX, centerY, scale, canvasWidth); // purple-400 / purple
+                const label = correctionWeightLabel.textContent.includes("Additional") ? 'Target -(O+T)' : 'Target -O';
+                drawSingleVector(ctx, Minus_O_vec_plot, isDarkMode ? "#C084FC" : "purple", label, centerX, centerY, scale, canvas.width); 
             }
             
-            const colorWc = isDarkMode ? "#FDBA74" : "orange"; // orange-300 / orange
-            const colorWs1 = isDarkMode ? "#FDE047" : "#FFC107"; // yellow-300 / yellow-500
-            const colorWs2 = isDarkMode ? "#A8A29E" : "#795548"; // stone-400 / stone-600
-            const correctionStrategy = document.querySelector('input[name="correctionStrategy"]:checked')?.value;
-            const label = (correctionStrategy === 'keep' && tabStandardButton.classList.contains('active')) ? "Wc_add" : "Wc";
-            
+            // Weights
+            const wcLabel = (document.querySelector('input[name="correctionStrategy"]:checked')?.value === 'keep') ? "Wc (Add)" : "Correction (Wc)";
             if (Wc_vec_plot && Wc_vec_plot.magnitude > 1e-9) {
-                if (Wc_vec_plot.magnitude > scaleDeterminingAmplitude) {
-                    const capped_Wc_vec = new Vector(scaleDeterminingAmplitude, Wc_vec_plot.angleDeg);
-                    const originalLabel = `${label}: ${Wc_vec_plot.magnitude.toFixed(2)} @ ${Wc_vec_plot.angleDeg.toFixed(1)}\u00B0`;
-                    drawSingleVector(ctx, capped_Wc_vec, colorWc, label, centerX, centerY, scale, canvasWidth, undefined, undefined, originalLabel);
-                } else {
-                    drawSingleVector(ctx, Wc_vec_plot, colorWc, label, centerX, centerY, scale, canvasWidth);
+                // Cap drawing of very large weights so they don't go off screen
+                let drawVec = Wc_vec_plot;
+                if(drawVec.magnitude > scaleDeterminingAmplitude) {
+                    drawVec = new Vector(scaleDeterminingAmplitude, Wc_vec_plot.angleDeg); // Visual cap only
                 }
-            }
-            if (Ws1_vec && Ws1_vec.magnitude > 1e-9) {
-                if (Ws1_vec.magnitude > scaleDeterminingAmplitude) {
-                    const capped_Ws1_vec = new Vector(scaleDeterminingAmplitude, Ws1_vec.angleDeg);
-                    const originalLabel = `W_s1: ${Ws1_vec.magnitude.toFixed(2)} @ ${Ws1_vec.angleDeg.toFixed(1)}\u00B0`;
-                    drawSingleVector(ctx, capped_Ws1_vec, colorWs1, "W_s1", centerX, centerY, scale, canvasWidth, undefined, undefined, originalLabel);
-                } else {
-                    drawSingleVector(ctx, Ws1_vec, colorWs1, "W_s1", centerX, centerY, scale, canvasWidth);
-                }
-            }
-            if (Ws2_vec && Ws2_vec.magnitude > 1e-9) {
-                if (Ws2_vec.magnitude > scaleDeterminingAmplitude) {
-                    const capped_Ws2_vec = new Vector(scaleDeterminingAmplitude, Ws2_vec.angleDeg);
-                    const originalLabel = `W_s2: ${Ws2_vec.magnitude.toFixed(2)} @ ${Ws2_vec.angleDeg.toFixed(1)}\u00B0`;
-                    drawSingleVector(ctx, capped_Ws2_vec, colorWs2, "W_s2", centerX, centerY, scale, canvasWidth, undefined, undefined, originalLabel);
-                } else {
-                    drawSingleVector(ctx, Ws2_vec, colorWs2, "W_s2", centerX, centerY, scale, canvasWidth);
-                }
+                drawSingleVector(ctx, drawVec, colorWc, wcLabel, centerX, centerY, scale, canvas.width, undefined, undefined, null, Wc_vec_plot); // Pass original for data
             }
 
+            if (Ws1_vec && Ws1_vec.magnitude > 1e-9) drawSingleVector(ctx, Ws1_vec, colorWs1, "Split W1", centerX, centerY, scale, canvas.width);
+            if (Ws2_vec && Ws2_vec.magnitude > 1e-9) drawSingleVector(ctx, Ws2_vec, colorWs2, "Split W2", centerX, centerY, scale, canvas.width);
+
+            // 6. Spots (High Spot / Heavy Spot)
             if (O_vec && O_vec.magnitude > 1e-9) {
-                const highSpotAngleDeg_CCW = O_vec.angleDeg; 
-                let icAngleForSpots = null;
-                const currentLocation = measurementLocationSelect.value;
-                const currentLocationData = balancingData[currentLocation];
-                if (currentLocationData) {
-                    if (currentLocationData.calculatedICAngle !== null && isFinite(currentLocationData.calculatedICAngle)) { icAngleForSpots = currentLocationData.calculatedICAngle; } 
-                    else if (currentLocationData.knownICAngle !== null && isFinite(currentLocationData.knownICAngle)) { icAngleForSpots = currentLocationData.knownICAngle; }
-                }
+                // High Spot
+                let hsAngle = O_vec.angleDeg;
+                if (rotationDir === "CCW" && hsAngle !== 0) hsAngle = normalizeAngle(360 - hsAngle);
+                const hsRad = toRadians(hsAngle);
+                const hsX = centerX + plotRadius * Math.cos(hsRad);
+                const hsY = centerY - plotRadius * Math.sin(hsRad);
                 
-                let hsDisplayAngleDeg = highSpotAngleDeg_CCW;
-                if (rotationDir === "CCW" && highSpotAngleDeg_CCW !== 0) { hsDisplayAngleDeg = normalizeAngle(360 - highSpotAngleDeg_CCW); }
-                const hsPlotAngleRad_display = toRadians(hsDisplayAngleDeg);
-                
-                const markerOuterRadius = plotRadius * 1.05 + (canvasWidth > 300 ? 10 : 5); 
-                const markerDotRadius = Math.max(3, canvasWidth / 100);
-                const labelOffset = markerDotRadius + 3; 
-                const hsColor = isDarkMode ? "#F87171" : "red"; // red-400 / red
-                const heavySColor = isDarkMode ? "#93C5FD" : "darkblue"; // blue-300 / darkblue
+                ctx.beginPath(); ctx.arc(hsX, hsY, 5, 0, 2*Math.PI); ctx.fillStyle = hsColor; ctx.fill();
+                // Store hit data for tooltips
+                vectorHitBoxes.push({type:'point', x:hsX, y:hsY, r:8, label:'High Spot (HS)', val:`${O_vec.angleDeg.toFixed(1)}°`});
 
-                const hsX = centerX + markerOuterRadius * Math.cos(hsPlotAngleRad_display);
-                const hsY = centerY - markerOuterRadius * Math.sin(hsPlotAngleRad_display); 
-                
-                ctx.beginPath(); ctx.arc(hsX, hsY, markerDotRadius, 0, 2 * Math.PI); 
-                ctx.fillStyle = hsColor;
-                ctx.fill();
-                ctx.font = `bold ${Math.max(9, canvasWidth / 45)}px Arial`;
-                ctx.fillStyle = hsColor;
-                ctx.textAlign = (Math.cos(hsPlotAngleRad_display) < -0.1) ? "right" : "left";
-                ctx.textBaseline = "middle";
-                ctx.fillText("HS", hsX + (Math.cos(hsPlotAngleRad_display) * labelOffset), hsY - (Math.sin(hsPlotAngleRad_display) * labelOffset) +1 );
+                // Heavy Spot
+                const currentLocData = balancingData[measurementLocationSelect.value];
+                let lagAngle = null;
+                if (currentLocData.calculatedICAngle !== null) lagAngle = currentLocData.calculatedICAngle;
+                else if (currentLocData.knownICAngle !== null) lagAngle = currentLocData.knownICAngle;
 
-                if (icAngleForSpots !== null) {
-                    const heavySpotAngleDeg_CCW = normalizeAngle(highSpotAngleDeg_CCW - icAngleForSpots); 
-                    let heavySDisplayAngleDeg = heavySpotAngleDeg_CCW;
-                    if (rotationDir === "CCW" && heavySpotAngleDeg_CCW !== 0) { heavySDisplayAngleDeg = normalizeAngle(360 - heavySpotAngleDeg_CCW); }
-                    const heavySpotPlotAngleRad_display = toRadians(heavySDisplayAngleDeg); 
-                    
-                    const heavySX = centerX + markerOuterRadius * Math.cos(heavySpotPlotAngleRad_display);
-                    const heavySY = centerY - markerOuterRadius * Math.sin(heavySpotPlotAngleRad_display);
-                    ctx.beginPath(); ctx.arc(heavySX, heavySY, markerDotRadius, 0, 2 * Math.PI); 
-                    ctx.fillStyle = heavySColor;
-                    ctx.fill();
-                    ctx.font = `bold ${Math.max(9, canvasWidth / 45)}px Arial`; 
-                    ctx.fillStyle = heavySColor;
-                    ctx.textAlign = (Math.cos(heavySpotPlotAngleRad_display) < -0.1) ? "right" : "left";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText("hS", heavySX + (Math.cos(heavySpotPlotAngleRad_display) * labelOffset), heavySY - (Math.sin(heavySpotPlotAngleRad_display) * labelOffset) + 1); 
+                if (lagAngle !== null) {
+                     let hSAngle = normalizeAngle(O_vec.angleDeg - lagAngle);
+                     let hSDisplay = hSAngle;
+                     if (rotationDir === "CCW" && hSDisplay !== 0) hSDisplay = normalizeAngle(360 - hSDisplay);
+                     const hSRad = toRadians(hSDisplay);
+                     const hSX = centerX + plotRadius * Math.cos(hSRad);
+                     const hSY = centerY - plotRadius * Math.sin(hSRad);
+                     
+                     ctx.beginPath(); ctx.arc(hSX, hSY, 5, 0, 2*Math.PI); ctx.fillStyle = heavySColor; ctx.fill();
+                     vectorHitBoxes.push({type:'point', x:hSX, y:hSY, r:8, label:'Heavy Spot (hS)', val:`${hSAngle.toFixed(1)}°`});
                 }
             }
+
+            // 7. GENERATE DETAILED LEGEND (Bottom Area)
+            const fmt = (vec) => vec && vec.magnitude > 1e-9 ? `${vec.magnitude.toFixed(2)} @ ${vec.angleDeg.toFixed(1)}°` : '---';
             
-            // Update Legend
-            plotLegend.innerHTML = `
-                <p class="${isDarkMode ? 'text-blue-400' : 'text-blue-600'}"><span class="legend-color-box" style="background-color: ${isDarkMode ? '#60A5FA' : 'blue'};"></span> Original Run (O)</p>
-                <p class="${isDarkMode ? 'text-red-400' : 'text-red-600'}"><span class="legend-color-box" style="background-color: ${isDarkMode ? '#F87171' : 'red'};"></span> Trial Run (O+T)</p>
-                <p class="${isDarkMode ? 'text-green-400' : 'text-green-600'}"><span class="legend-color-box" style="background-color: ${isDarkMode ? '#4ADE80' : 'green'};"></span> Effective Vector of Trial (T_eff)</p>
-                <p class="${isDarkMode ? 'text-orange-300' : 'text-orange-500'}"><span class="legend-color-box" style="background-color: ${colorWc};"></span> Correction Weight Vector (Wc)</p>
-                <p class="${isDarkMode ? 'text-purple-400' : 'text-purple-600'}"><span class="legend-color-box" style="background-color: ${isDarkMode ? '#C084FC' : 'purple'};"></span> Target Response</p>
-                <p class="${isDarkMode ? 'text-yellow-300' : 'text-yellow-500'}"><span class="legend-color-box" style="background-color: ${colorWs1};"></span> Split Weight Vector 1 (W_s1)</p> 
-                <p class="${isDarkMode ? 'text-stone-400' : 'text-stone-600'}"><span class="legend-color-box" style="background-color: ${colorWs2};"></span> Split Weight Vector 2 (W_s2)</p>
-                <p class="${isDarkMode ? 'text-red-400' : 'text-red-600'}"><span class="legend-dot" style="background-color: ${isDarkMode ? '#F87171' : 'red'};"></span> HS - High Spot</p> 
-                <p class="${isDarkMode ? 'text-blue-300' : 'text-blue-900'}"><span class="legend-dot" style="background-color: ${isDarkMode ? '#93C5FD' : 'darkblue'};"></span> hS - Heavy Spot</p> 
+            plotLegendDiv.innerHTML = `
+                <div class="col-span-1 ${isDarkMode?'text-blue-400':'text-blue-600'}">
+                    <span class="legend-color-box" style="background-color:${isDarkMode?'#60A5FA':'blue'}"></span> 
+                    Orig (O): <span class="legend-value text-s font-semibold text-gray-500 dark:text-gray-400">${fmt(O_vec)}</span>
+                </div>
+                <div class="col-span-1 ${isDarkMode?'text-red-400':'text-red-600'}">
+                    <span class="legend-color-box" style="background-color:${isDarkMode?'#F87171':'red'}"></span> 
+                    Trial (O+T): <span class="legend-value text-m font-semibold text-gray-500 dark:text-gray-400">${fmt(OT_vec)}</span>
+                </div>
+                <div class="col-span-1 ${isDarkMode?'text-green-400':'text-green-600'}">
+                    <span class="legend-color-box" style="background-color:${isDarkMode?'#4ADE80':'green'}"></span> 
+                    Eff (T_eff): <span class="legend-value text-m font-semibold text-gray-500 dark:text-gray-400">${fmt(T_eff_vec)}</span>
+                </div>
+                <div class="col-span-1 ${isDarkMode?'text-orange-300':'text-orange-500'}">
+                    <span class="legend-color-box" style="background-color:${colorWc}"></span> 
+                    Corr (Wc): <span class="legend-value text-m font-semibold text-gray-500 dark:text-gray-400">${fmt(Wc_vec_plot)}</span>
+                </div>
+                <div class="col-span-1 ${isDarkMode?'text-purple-400':'text-purple-600'}">
+                    <span class="legend-color-box" style="background-color:${isDarkMode?'#C084FC':'purple'}"></span> 
+                    Target: <span class="legend-value text-m font-semibold text-gray-500 dark:text-gray-400">${fmt(Minus_O_vec_plot)}</span>
+                </div>
+                <div class="col-span-1 ${isDarkMode?'text-red-400':'text-red-600'}">
+                     <span class="legend-dot" style="background-color:${hsColor}"></span> High Spot (HS)
+                </div>
+                <div class="col-span-1 ${isDarkMode?'text-blue-300':'text-blue-900'}">
+                     <span class="legend-dot" style="background-color:${heavySColor}"></span> Heavy Spot (hS)
+                </div>
             `;
+            
+            if(Ws1_vec || Ws2_vec) {
+                 plotLegendDiv.innerHTML += `
+                    <div class="col-span-1 ${isDarkMode?'text-yellow-300':'text-yellow-500'}">
+                        <span class="legend-color-box" style="background-color:${colorWs1}"></span> Split 1: <span class="legend-value text-xs">${fmt(Ws1_vec)}</span>
+                    </div>
+                     <div class="col-span-1 ${isDarkMode?'text-stone-400':'text-stone-600'}">
+                        <span class="legend-color-box" style="background-color:${colorWs2}"></span> Split 2: <span class="legend-value text-xs">${fmt(Ws2_vec)}</span>
+                    </div>
+                 `;
+            }
         }
         
-        function drawSingleVector(ctx, vector, color, label, plotCenterX, plotCenterY, scaleFactor, canvasWidth, customStartX, customStartY, overrideLabel) {
-            if (!vector || vector.magnitude < 1e-9) return;
+        // --- UPDATED: Draw Single Vector (Adds hitboxes, removes text) ---
+        function drawSingleVector(ctx, vector, color, label, plotCenterX, plotCenterY, scaleFactor, canvasWidth, customStartX, customStartY, overrideLabel, trueVectorForData) {
+            if (!vector || vector.magnitude < 1e-9) return {endX: plotCenterX, endY: plotCenterY};
+            
             let plotAngleRad = vector.angleRad; 
             const currentRotationDir = rotationDirectionInput.value;
+            // Rotation Adjustment for Display
             if (currentRotationDir === "CCW") { plotAngleRad = (vector.angleDeg !== 0) ? toRadians(normalizeAngle(360 - vector.angleDeg)) : 0; }
+            
             const startX = (customStartX !== undefined && customStartX !== null) ? customStartX : plotCenterX;
             const startY = (customStartY !== undefined && customStartY !== null) ? customStartY : plotCenterY;
+            
             const vectorPlotXComponent = vector.magnitude * Math.cos(plotAngleRad) * scaleFactor;
             const vectorPlotYComponent = vector.magnitude * Math.sin(plotAngleRad) * scaleFactor;
-            const endX = startX + vectorPlotXComponent, endY = startY - vectorPlotYComponent; 
+            
+            const endX = startX + vectorPlotXComponent; 
+            const endY = startY - vectorPlotYComponent; 
+            
+            // Draw Line
             ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY);
-            ctx.strokeStyle = color; ctx.lineWidth = Math.max(2.5, canvasWidth / 180); ctx.stroke();
-            const headLength = Math.max(8, canvasWidth / 50);
+            ctx.strokeStyle = color; 
+            ctx.lineWidth = 3; 
+            ctx.stroke();
+            
+            // Draw Arrow Head
+            const headLength = 12;
             const arrowAngle = Math.atan2(endY - startY, endX - startX);
             ctx.fillStyle = color; ctx.beginPath();
             ctx.moveTo(endX, endY);
             ctx.lineTo(endX - headLength * Math.cos(arrowAngle - Math.PI / 6), endY - headLength * Math.sin(arrowAngle - Math.PI / 6));
             ctx.lineTo(endX - headLength * Math.cos(arrowAngle + Math.PI / 6), endY - headLength * Math.sin(arrowAngle + Math.PI / 6));
             ctx.closePath(); ctx.fill();
-            ctx.font = `bold ${Math.max(10, canvasWidth / 40)}px Arial`;
-            ctx.fillStyle = color; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
-            const shadowColor = document.documentElement.classList.contains('dark') ? 'rgba(31, 41, 55, 0.7)' : 'rgba(240, 249, 255, 0.7)';
-            ctx.shadowColor = shadowColor; ctx.shadowBlur = 4;
-            let labelText = overrideLabel ? overrideLabel : `${label}: ${vector.magnitude.toFixed(2)} @ ${vector.angleDeg.toFixed(1)}\u00B0`;
-            let textX = endX + 5, textY = endY - 5;
-            const measuredText = ctx.measureText(labelText); const textWidth = measuredText.width;
-            if (vectorPlotXComponent < 0) { textX = endX - textWidth - 5; }
-            if (endX + textWidth > canvasWidth) { textX = canvasWidth - textWidth - 5; }
-            if (endX - textWidth < 0) { textX = 5; }
-            ctx.fillText(labelText, textX, textY);
-            ctx.shadowBlur = 0;
+
+            // ** NEW: Store Hitbox data for hover interaction **
+            const dataVec = trueVectorForData || vector;
+            vectorHitBoxes.push({
+                type: 'vector',
+                startX: startX, startY: startY, endX: endX, endY: endY,
+                label: label,
+                val: `${dataVec.magnitude.toFixed(2)} @ ${dataVec.angleDeg.toFixed(1)}°`
+            });
+            
+            return {endX, endY};
+        }
+
+        // --- NEW: Interactive Canvas Logic ---
+        function setupCanvasInteractivity() {
+            const canvas = document.getElementById('polarPlotCanvas');
+            const tooltip = document.getElementById('polarPlotTooltip');
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
+                const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
+                
+                let found = null;
+                
+                // Check points (High/Heavy spots)
+                for (let item of vectorHitBoxes) {
+                    if(item.type === 'point') {
+                        const dist = Math.sqrt((mouseX - item.x)**2 + (mouseY - item.y)**2);
+                        if (dist < item.r + 5) { found = item; break; }
+                    }
+                }
+                
+                // Check vectors (Distance to line segment)
+                if (!found) {
+                    for (let item of vectorHitBoxes) {
+                        if(item.type === 'vector') {
+                            // Math to find distance from point to line segment
+                            const A = mouseX - item.startX;
+                            const B = mouseY - item.startY;
+                            const C = item.endX - item.startX;
+                            const D = item.endY - item.startY;
+                            const dot = A * C + B * D;
+                            const len_sq = C * C + D * D;
+                            let param = -1;
+                            if (len_sq !== 0) param = dot / len_sq;
+                            
+                            let xx, yy;
+                            if (param < 0) { xx = item.startX; yy = item.startY; }
+                            else if (param > 1) { xx = item.endX; yy = item.endY; }
+                            else { xx = item.startX + param * C; yy = item.startY + param * D; }
+                            
+                            const dist = Math.sqrt((mouseX - xx)**2 + (mouseY - yy)**2);
+                            if (dist < 10) { found = item; break; } // 10px tolerance
+                        }
+                    }
+                }
+                
+                if (found) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.pageX - rect.left + 10) + 'px';
+                    tooltip.style.top = (e.pageY - rect.top + 10) + 'px';
+                    // Fix tooltip position to be relative to container
+                    const container = document.getElementById('polarPlotContainer');
+                    const containerRect = container.getBoundingClientRect();
+                    const relativeX = e.clientX - containerRect.left + 15;
+                    const relativeY = e.clientY - containerRect.top + 15;
+                    
+                    tooltip.style.left = relativeX + 'px';
+                    tooltip.style.top = relativeY + 'px';
+                    
+                    tooltip.innerHTML = `<strong>${found.label}</strong><br>${found.val}`;
+                    canvas.style.cursor = 'pointer';
+                } else {
+                    tooltip.style.display = 'none';
+                    canvas.style.cursor = 'default';
+                }
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        }
+
+        // *** NEW: Helper function to build the data tables for reports ***
+        function buildReportDataTable() {
+            let dataTableHtml = '';
+            
+            if (lastProcessedLocations.length === 0) {
+                return '<p>No calculation data available.</p>';
+            }
+
+            const isStandardMode = lastCalculationMode.includes('Standard');
+
+            // Build Header
+            dataTableHtml = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Location</th>
+                            <th>O Amp</th>
+                            <th>O Phase</th>
+            `;
+            if (isStandardMode) {
+                dataTableHtml += `
+                            <th>O+T Amp</th>
+                            <th>O+T Phase</th>
+                            <th>IC Mag</th>
+                            <th>IC Angle</th>
+                `;
+            } else {
+                dataTableHtml += `
+                            <th>Known IC Mag</th>
+                            <th>Known IC Angle</th>
+                `;
+            }
+            // *** NEW: Add Final Run headers ***
+            dataTableHtml += `
+                            <th>Final Amp</th>
+                            <th>Final Phase</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // Build Body
+            for (const loc of lastProcessedLocations) {
+                const data = balancingData[loc];
+                const o_amp = data.originalAmp !== null ? data.originalAmp.toFixed(3) : '---';
+                const o_ang = data.originalAngle !== null ? data.originalAngle.toFixed(1) : '---';
+                
+                dataTableHtml += `
+                    <tr>
+                        <td><strong>${loc}</strong></td>
+                        <td>${o_amp}</td>
+                        <td>${o_ang}</td>
+                `;
+
+                if (isStandardMode) {
+                    const ot_amp = data.trialRunAmp !== null ? data.trialRunAmp.toFixed(3) : '---';
+                    const ot_ang = data.trialRunAngle !== null ? data.trialRunAngle.toFixed(1) : '---';
+                    const ic_mag = data.calculatedICMag !== null ? data.calculatedICMag.toFixed(4) : '---';
+                    const ic_ang = data.calculatedICAngle !== null ? data.calculatedICAngle.toFixed(1) : '---';
+                    dataTableHtml += `
+                        <td>${ot_amp}</td>
+                        <td>${ot_ang}</td>
+                        <td>${ic_mag}</td>
+                        <td>${ic_ang}</td>
+                    `;
+                } else {
+                    const ic_mag = data.knownICMag !== null ? data.knownICMag.toFixed(4) : '---';
+                    const ic_ang = data.knownICAngle !== null ? data.knownICAngle.toFixed(1) : '---';
+                    dataTableHtml += `
+                        <td>${ic_mag}</td>
+                        <td>${ic_ang}</td>
+                    `;
+                }
+                
+                // *** NEW: Add Final Run data ***
+                const f_amp = data.finalAmp !== null ? data.finalAmp.toFixed(3) : '---';
+                const f_ang = data.finalAngle !== null ? data.finalAngle.toFixed(1) : '---';
+                dataTableHtml += `
+                        <td>${f_amp}</td>
+                        <td>${f_ang}</td>
+                    </tr>
+                `;
+            }
+
+            dataTableHtml += '</tbody></table>';
+            return dataTableHtml;
         }
         
         // --- Footer Button Actions & Data Management (Save, Load, Export, Print, Reset) ---
         
+        // *** MODIFIED: Heavily updated for professional report (Forces Light Mode) ***
         printReportButton.addEventListener('click', () => { 
-            const isDarkMode = document.documentElement.classList.contains('dark');
+            const isDarkMode = false; // *** Force Light Mode for reports ***
+            
             // 1. Get all data
             const eqName = getInputValue('equipmentName', 'N/A');
             const plant = getInputValue('plantName', 'N/A');
@@ -1609,22 +2217,37 @@
             const power = getInputValue('ratedPower', 'N/A');
             const rpm = getInputValue('rotorRPM', 'N/A');
             const rotorType = getInputValue('rotorTypeSelect', 'N/A');
+            const logoUrl = "https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png";
             
-            const loc = measurementLocationSelect.value;
-            const icMag = getSpanValue('icMagnitude');
-            const icAng = getSpanValue('icAngle');
-            const wcLabel = getSpanValue('correctionWeightLabel', 'Correction Weight (Wc):');
-            const wcMass = getSpanValue('correctionWeightMass');
-            const wcAng = getSpanValue('correctionWeightAngle');
-            
-            const splitW1M = getSpanValue('splitWeight1Mass');
-            const splitW1A = getSpanValue('splitWeight1Angle');
-            const splitW2M = getSpanValue('splitWeight2Mass');
-            const splitW2A = getSpanValue('splitWeight2Angle');
-            
+            // Get calculation data
+            const plotLocation = measurementLocationSelect.value;
             const hasStdResults = !resultsDisplayDiv.classList.contains('hidden');
-            const hasIcResults = !icResultsDiv.classList.contains('hidden');
             const hasSplitResults = !splitResultsDisplayDiv.classList.contains('hidden');
+            
+            // Get final weights from the stored data for the *overall* plot location
+            const addMass = (balancingData[plotLocation].correctionMass !== null) ? balancingData[plotLocation].correctionMass.toFixed(3) : '---';
+            const addAngle = (balancingData[plotLocation].correctionAngle !== null) ? balancingData[plotLocation].correctionAngle.toFixed(1) : '---';
+            const removeMass = (balancingData[plotLocation].removalMass !== null) ? balancingData[plotLocation].removalMass.toFixed(3) : '---';
+            const removeAngle = (balancingData[plotLocation].removalAngle !== null) ? balancingData[plotLocation].removalAngle.toFixed(1) : '---';
+            
+            // *** NEW: Get the logged final action ***
+            let finalActionHTML = '';
+            if (lastBalancingAction === 'add') {
+                finalActionHTML = `
+                    <p><strong>Action Taken:</strong> Weight Addition</p>
+                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${addMass} grams</p>
+                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${addAngle} &deg;</p>
+                `;
+            } else {
+                finalActionHTML = `
+                    <p><strong>Action Taken:</strong> Weight Removal</p>
+                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${removeMass} grams</p>
+                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${removeAngle} &deg;</p>
+                `;
+            }
+            
+            // Get data table
+            const dataTableHtml = buildReportDataTable();
             
             // 2. Get plot image
             const plotImage = canvas.toDataURL('image/png');
@@ -1635,81 +2258,120 @@
                 <html lang="en">
                 <head>
                     <meta charset="UTF-8">
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
                     <title>Balancing Report - ${eqName}</title>
                     <style>
                         body { 
                             font-family: Arial, sans-serif; margin: 0; padding: 0; 
-                            /* *** NEW: Apply dark mode to print *** */
                             background-color: ${isDarkMode ? '#1F2937' : '#FFFFFF'};
                             color: ${isDarkMode ? '#D1D5DB' : '#000000'};
+                            font-size: 10pt;
                         }
-                        @page { size: A4; margin: 20mm; }
+                        @page { size: A4; margin: 15mm; }
                         .container { width: 100%; max-width: 180mm; margin: 0 auto; }
-                        h1 { 
-                            text-align: center; color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
-                            border-bottom: 2px solid ${isDarkMode ? '#60A5FA' : '#003366'}; 
-                            padding-bottom: 5px; 
+                        .header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            border-bottom: 2px solid ${isDarkMode ? '#60A5FA' : '#003366'};
+                            padding-bottom: 10px;
+                        }
+                        .header img { height: 40px; }
+                        .header h1 {
+                            font-size: 18pt;
+                            color: ${isDarkMode ? '#60A5FA' : '#003366'};
+                            margin: 0;
+                            text-align: right;
                         }
                         h2 { 
+                            font-size: 14pt;
                             color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
                             border-bottom: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; 
-                            padding-bottom: 3px; margin-top: 25px; 
+                            padding-bottom: 3px; margin-top: 20px; 
                         }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        th, td { border: 1px solid ${isDarkMode ? '#374151' : '#ddd'}; padding: 8px; text-align: left; }
-                        th { background-color: ${isDarkMode ? '#374151' : '#f2f2f2'}; }
-                        .header-table td { border: none; padding: 2px 0; }
-                        .results-group { margin-top: 15px; }
-                        .results-group p { margin: 5px 0 5px 15px; }
+                        .details-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 0 20px;
+                        }
+                        .details-grid p {
+                            margin: 4px 0;
+                            display: grid;
+                            grid-template-columns: 140px 1fr;
+                        }
+                        .details-grid strong { color: ${isDarkMode ? '#F9FAFB' : '#333'}; }
+                        .data-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 10px;
+                            font-size: 9pt;
+                        }
+                        .data-table th, .data-table td { 
+                            border: 1px solid ${isDarkMode ? '#374151' : '#ddd'}; 
+                            padding: 6px; 
+                            text-align: left; 
+                        }
+                        .data-table th { background-color: ${isDarkMode ? '#374151' : '#f2f2f2'}; }
+                        .results-group {
+                            margin-top: 15px;
+                            padding: 10px;
+                            background-color: ${isDarkMode ? '#27272a' : '#f9f9f9'};
+                            border: 1px solid ${isDarkMode ? '#374151' : '#eee'};
+                            border-radius: 5px;
+                        }
+                        .results-group p { margin: 5px 0 5px 10px; font-size: 11pt; }
                         .results-group strong { color: ${isDarkMode ? '#F9FAFB' : '#333'}; }
                         .plot-container { text-align: center; margin-top: 20px; page-break-inside: avoid; }
                         .plot-container img { max-width: 90%; height: auto; border: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; }
+                        
                         @media print {
                             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                             h2 { page-break-after: avoid; }
-                            .plot-container { page-break-inside: avoid; }
+                            .plot-container, .results-group { page-break-inside: avoid; }
                         }
                     </style>
                 </head>
                 <body>
                     <div class="container">
-                        <h1>Single Plane Balancing Report</h1>
+                        <div class="header">
+                            <img src="${logoUrl}" alt="Logo">
+                            <h1>Single Plane Balancing Report</h1>
+                        </div>
                         
-                        <h2>Header Information</h2>
-                        <table class="header-table">
-                            <tr><td><strong>Equipment:</strong></td><td>${eqName}</td></tr>
-                            <tr><td><strong>Plant:</strong></td><td>${plant}</td></tr>
-                            <tr><td><strong>Date:</strong></td><td>${date}</td></tr>
-                        </table>
+                        <h2>Job Details</h2>
+                        <div class="details-grid">
+                            <p><strong><i class="fas fa-fan"></i> Equipment:</strong> ${eqName}</p>
+                            <p><strong><i class="fas fa-industry"></i> Plant:</strong> ${plant}</p>
+                            <p><strong><i class="far fa-calendar-alt"></i> Date:</strong> ${date}</p>
+                            <p><strong><i class="fas fa-tachometer-alt"></i> Rotor RPM:</strong> ${rpm}</p>
+                            <p><strong><i class="fas fa-bolt"></i> Rated Power:</strong> ${power}</p>
+                            <p><strong><i class="fas fa-certificate"></i> Number of Vanes:</strong> ${vanes}</p>
+                            <p><strong><i class="fas fa-shapes"></i> Rotor Type:</strong> ${rotorType}</p>
+                            <p><strong><i class="fas fa-sync-alt mr-2"></i> Rotation:</strong> ${rotDir}</p>
+                        </div>
+
+                        <h2>Data Used in Calculation</h2>
+                        ${dataTableHtml}
                         
-                        <h2>Equipment Details</h2>
-                        <table class="header-table">
-                            <tr><td><strong>Number of Vanes:</strong></td><td>${vanes}</td></tr>
-                            <tr><td><strong>Rotation:</strong></td><td>${rotDir}</td></tr>
-                            <tr><td><strong>Rotor Type:</strong></td><td>${rotorType}</td></tr>
-                            <tr><td><strong>Power:</strong></td><td>${power}</td></tr>
-                            <tr><td><strong>RPM:</strong></td><td>${rpm}</td></tr>
-                        </table>
-                        
-                        ${hasStdResults ? `
-                        <h2>Balancing Results (at ${loc})</h2>
+                        ${hasStdResults || lastCalculationMode.includes('Trim') ? `
+                        <h2>Balancing Summary</h2>
                         <div class="results-group">
-                            ${hasIcResults ? `
-                            <p><strong>Influence Coefficient:</strong> ${icMag} (mm/s/gram) @ ${icAng}&deg;</p>
-                            ` : ''}
-                            <p><strong>${wcLabel}</strong> ${wcMass} grams @ ${wcAng}&deg;</p>
+                            <p><strong>Balancing Mode:</strong> ${lastCalculationMode}</p>
+                            <p><strong>Plot Location:</strong> ${plotLocation}</p>
+                            <hr style="border-color: ${isDarkMode ? '#374151' : '#ddd'}; margin: 10px 0;">
+                            ${finalActionHTML}
                         </div>
                         ` : ''}
                         
                         ${hasSplitResults ? `
                         <h2>Split Weight Results</h2>
                         <div class="results-group">
-                            <p><strong>Weight 1 (W1):</strong> ${splitW1M} grams @ ${splitW1A}&deg;</p>
-                            <p><strong>Weight 2 (W2):</strong> ${splitW2M} grams @ ${splitW2A}&deg;</p>
+                            <p><strong>Split Weight 1 (W1):</strong> ${getSpanValue('splitWeight1Mass')} grams @ ${getSpanValue('splitWeight1Angle')}&deg;</p>
+                            <p><strong>Split Weight 2 (W2):</strong> ${getSpanValue('splitWeight2Mass')} grams @ ${getSpanValue('splitWeight2Angle')}&deg;</p>
                         </div>
                         ` : ''}
 
-                        <h2>Polar Plot (at ${loc})</h2>
+                        <h2><i class="fas fa-bullseye"></i> Polar Plot (at ${plotLocation})</h2>
                         <div class="plot-container">
                             <img src="${plotImage}" alt="Polar Plot">
                         </div>
@@ -1732,37 +2394,46 @@
             };
         });
 
-        function getInputValue(elementId, placeholder = "N/A") { 
-            const el = document.getElementById(elementId);
-            return (el && el.value) ? el.value : placeholder; 
-        }
-        function getSpanValue(elementId, placeholder = "---") { 
-            const el = document.getElementById(elementId);
-            return (el && el.textContent) ? el.textContent : placeholder;
-        }
-
+        // *** MODIFIED: Heavily updated for professional report (Forces Light Mode) ***
         exportWordButton.addEventListener('click', () => { 
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            // 1. Get data
+            const isDarkMode = false; // *** Force Light Mode for reports ***
+
+            // 1. Get all data
             const eqName = getInputValue('equipmentName', 'N/A');
             const plant = getInputValue('plantName', 'N/A');
             const date = getInputValue('reportDate', 'N/A');
-            const loc = measurementLocationSelect.value;
+            const vanes = getInputValue('numVanes', 'N/A');
+            const rotDir = rotationDirectionInput.value;
+            const power = getInputValue('ratedPower', 'N/A');
+            const rpm = getInputValue('rotorRPM', 'N/A');
+            const rotorType = getInputValue('rotorTypeSelect', 'N/A');
             
-            const icMag = getSpanValue('icMagnitude');
-            const icAng = getSpanValue('icAngle');
-            const wcLabel = getSpanValue('correctionWeightLabel', 'Correction Weight (Wc):');
-            const wcMass = getSpanValue('correctionWeightMass');
-            const wcAng = getSpanValue('correctionWeightAngle');
-            
-            const splitW1M = getSpanValue('splitWeight1Mass');
-            const splitW1A = getSpanValue('splitWeight1Angle');
-            const splitW2M = getSpanValue('splitWeight2Mass');
-            const splitW2A = getSpanValue('splitWeight2Angle');
-            
-            const hasStdResults = !resultsDisplayDiv.classList.contains('hidden');
-            const hasIcResults = !icResultsDiv.classList.contains('hidden');
+            const plotLocation = measurementLocationSelect.value;
+            const hasStdResults = !resultsDisplayDiv.classList.contains('hidden') || lastCalculationMode.includes('Trim');
             const hasSplitResults = !splitResultsDisplayDiv.classList.contains('hidden');
+            
+            const addMass = (balancingData[plotLocation].correctionMass !== null) ? balancingData[plotLocation].correctionMass.toFixed(3) : '---';
+            const addAngle = (balancingData[plotLocation].correctionAngle !== null) ? balancingData[plotLocation].correctionAngle.toFixed(1) : '---';
+            const removeMass = (balancingData[plotLocation].removalMass !== null) ? balancingData[plotLocation].removalMass.toFixed(3) : '---';
+            const removeAngle = (balancingData[plotLocation].removalAngle !== null) ? balancingData[plotLocation].removalAngle.toFixed(1) : '---';
+            
+            // *** NEW: Get the logged final action ***
+            let finalActionHTML = '';
+            if (lastBalancingAction === 'add') {
+                finalActionHTML = `
+                    <p><strong>Action Taken:</strong> Weight Addition</p>
+                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${addMass} grams</p>
+                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${addAngle} &deg;</p>
+                `;
+            } else {
+                finalActionHTML = `
+                    <p><strong>Action Taken:</strong> Weight Removal</p>
+                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${removeMass} grams</p>
+                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${removeAngle} &deg;</p>
+                `;
+            }
+
+            const dataTableHtml = buildReportDataTable();
             
             // 2. Get plot image
             const plotImage = canvas.toDataURL('image/png');
@@ -1772,7 +2443,7 @@
                 <html xmlns:v="urn:schemas-microsoft-com:vml"
                 xmlns:o="urn:schemas-microsoft-com:office:office"
                 xmlns:w="urn:schemas-microsoft-com:office:word"
-                xmlns:m="http://schemas-microsoft-com/office/2004/12/omml"
+                xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
                 xmlns="http://www.w3.org/TR/REC-html40">
                 <head>
                     <meta charset="utf-8">
@@ -1780,13 +2451,48 @@
                         body { 
                             font-family: Arial, sans-serif; 
                             ${isDarkMode ? 'background-color:#1F2937; color:#D1D5DB;' : 'background-color:#FFFFFF; color:#000000;'}
+                            font-size: 10pt;
                         }
-                        h1 { text-align: center; color: ${isDarkMode ? '#60A5FA' : '#003366'}; }
-                        h2 { color: ${isDarkMode ? '#60A5FA' : '#003366'}; border-bottom: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; }
+                        h1 { 
+                            font-size: 18pt;
+                            text-align: center; color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
+                            border-bottom: 2px solid ${isDarkMode ? '#60A5FA' : '#003366'};
+                        }
+                        h2 { 
+                            font-size: 14pt;
+                            color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
+                            border-bottom: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; 
+                        }
                         p { margin: 5px 0; }
                         table { border-collapse: collapse; }
                         td { padding: 5px; }
                         strong { color: ${isDarkMode ? '#F9FAFB' : '#333'}; }
+
+                        .details-grid {
+                            /* Word doesn't support grid, use a table */
+                        }
+                        .details-grid p {
+                            margin: 4px 0;
+                        }
+                        .data-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 10px;
+                            font-size: 9pt;
+                        }
+                        .data-table th, .data-table td { 
+                            border: 1px solid ${isDarkMode ? '#374151' : '#999'}; 
+                            padding: 6px; 
+                            text-align: left; 
+                        }
+                        .data-table th { background-color: ${isDarkMode ? '#374151' : '#f2f2f2'}; }
+                        .results-group {
+                            margin-top: 15px;
+                            padding: 10px;
+                            background-color: ${isDarkMode ? '#27272a' : '#f9f9f9'};
+                            border: 1px solid ${isDarkMode ? '#374151' : '#eee'};
+                        }
+                        .results-group p { margin: 5px 0 5px 10px; font-size: 11pt; }
                     </style>
                 </head>
                 <body>
@@ -1794,32 +2500,57 @@
             
             const postHtml = "</body></html>";
             
+            // Using tables for Word compatibility instead of grid
             const contentHtml = `
-                <h1>Single Plane Balancing Report</h1>
-                
-                <h2>Header Information</h2>
-                <table>
-                    <tr><td><strong>Equipment:</strong></td><td>${eqName}</td></tr>
-                    <tr><td><strong>Plant:</strong></td><td>${plant}</td></tr>
-                    <tr><td><strong>Date:</strong></td><td>${date}</td></tr>
-                </table>
+                <div class="container">
+                    <h1>Single Plane Balancing Report</h1>
+                    
+                    <h2>Job Details</h2>
+                    <table width="100%">
+                        <tr>
+                            <td width="50%"><p><strong>Equipment:</strong> ${eqName}</p></td>
+                            <td width="50%"><p><strong>Plant:</strong> ${plant}</p></td>
+                        </tr>
+                        <tr>
+                            <td><p><strong>Date:</strong> ${date}</p></td>
+                            <td><p><strong>Rotor RPM:</strong> ${rpm}</p></td>
+                        </tr>
+                        <tr>
+                            <td><p><strong>Rated Power:</strong> ${power}</p></td>
+                            <td><p><strong>Number of Vanes:</strong> ${vanes}</p></td>
+                        </tr>
+                        <tr>
+                            <td><p><strong>Rotor Type:</strong> ${rotorType}</p></td>
+                            <td><p><strong>Rotation:</strong> ${rotDir}</p></td>
+                        </tr>
+                    </table>
 
-                ${hasStdResults ? `
-                <h2>Balancing Results (at ${loc})</h2>
-                ${hasIcResults ? `
-                <p><strong>Influence Coefficient:</strong> ${icMag} (mm/s/gram) @ ${icAng}&deg;</p>
-                ` : ''}
-                <p><strong>${wcLabel}</strong> ${wcMass} grams @ ${wcAng}&deg;</p>
-                ` : ''}
-                
-                ${hasSplitResults ? `
-                <h2>Split Weight Results</h2>
-                <p><strong>Weight 1 (W1):</strong> ${splitW1M} grams @ ${splitW1A}&deg;</p>
-                <p><strong>Weight 2 (W2):</strong> ${splitW2M} grams @ ${splitW2A}&deg;</p>
-                ` : ''}
+                    <h2>Data Used in Calculation</h2>
+                    ${dataTableHtml}
+                    
+                    ${hasStdResults ? `
+                    <h2>Balancing Summary</h2>
+                    <div class="results-group">
+                        <p><strong>Balancing Mode:</strong> ${lastCalculationMode}</p>
+                        <p><strong>Plot Location:</strong> ${plotLocation}</p>
+                        <hr style="border-color: ${isDarkMode ? '#374151' : '#ddd'}; margin: 10px 0;">
+                        ${finalActionHTML}
+                    </div>
+                    ` : ''}
+                    
+                    ${hasSplitResults ? `
+                    <h2>Split Weight Results</h2>
+                    <div class="results-group">
+                        <p><strong>Split Weight 1 (W1):</strong> ${getSpanValue('splitWeight1Mass')} grams @ ${getSpanValue('splitWeight1Angle')}&deg;</p>
+                        <p><strong>Split Weight 2 (W2):</strong> ${getSpanValue('splitWeight2Mass')} grams @ ${getSpanValue('splitWeight2Angle')}&deg;</p>
+                    </div>
+                    ` : ''}
 
-                <h2>Polar Plot (at ${loc})</h2>
-                <p><img src="${plotImage}" style="max-width:500px;"></p>
+                    <h2>Polar Plot (at ${plotLocation})</h2>
+                    <div class="plot-container">
+                        <img src="${plotImage}" style="max-width:500px;" alt="Polar Plot">
+                    </div>
+                </div>
             `;
             
             const fullHtml = preHtml + contentHtml + postHtml;
@@ -1857,6 +2588,13 @@
                     rotorWeight: rotorWeightInput.value,
                     trialRadius: trialRadiusInput.value
                 },
+                // *** FIX: Save the critical global variables for reporting ***
+                globalState: {
+                    lastCalculationMode: lastCalculationMode,
+                    lastProcessedLocations: lastProcessedLocations,
+                    lastBalancingAction: lastBalancingAction,
+                    measurementLocation: measurementLocationSelect.value
+                },
                 balancingData: balancingData // Save the whole object
              };
              
@@ -1864,7 +2602,8 @@
              const dataBlob = new Blob([dataStr], {type: 'application/json'});
              const url = URL.createObjectURL(dataBlob);
              const link = document.createElement('a');
-             link.download = `balancing_data_${equipmentNameInput.value || 'export'}_${reportDateInput.value}.json`;
+             const cleanName = (equipmentNameInput.value || 'export').replace(/[^a-z0-9]/gi, '_');
+             link.download = `balancing_data_${cleanName}_${reportDateInput.value}.json`;
              link.href = url;
              link.click();
              URL.revokeObjectURL(url);
@@ -1883,48 +2622,8 @@
                     try {
                         const content = readerEvent.target.result;
                         const loadedData = JSON.parse(content);
-                        
-                        // Restore header
-                        equipmentNameInput.value = loadedData.header.equipmentName || '';
-                        plantNameInput.value = loadedData.header.plantName || '';
-                        reportDateInput.value = loadedData.header.reportDate || new Date().toISOString().split('T')[0];
-
-                        // Restore details
-                        numVanesInput.value = loadedData.details.numVanes || '12';
-                        ratedPowerInput.value = loadedData.details.ratedPower || '';
-                        rotorRPMInput.value = loadedData.details.rotorRPM || '';
-                        rotorTypeSelect.value = loadedData.details.rotorType || '';
-                        rotorTypeSelect.dispatchEvent(new Event('change')); // Trigger image update
-                        
-                        if (loadedData.details.rotationDirection === "CW") {
-                            rotDirCWButton.click();
-                        } else {
-                            rotDirCCWButton.click();
-                        }
-
-                        // Restore suggestion inputs
-                        rotorWeightInput.value = loadedData.suggestion.rotorWeight || '';
-                        trialRadiusInput.value = loadedData.suggestion.trialRadius || '';
-
-                        // Restore balancing data object
-                        if (loadedData.balancingData) {
-                            balancingData = loadedData.balancingData;
-                        }
-
-                        populateInputTables(); // This will fill all tables
-                        updateGlobalTrialWeightFields(); // This fills trial weight
-
-                        clearError();
-                        resultsDisplayDiv.classList.add('hidden');
-                        if (splitResultsDisplay) splitResultsDisplay.classList.add('hidden');
-                        
-                        measurementLocationSelect.value = "IBH";
-                        plotLocationLabelSpan.textContent = "IBH";
-                        currentLocSplittingSpan.textContent = "IBH";
-                        prefillSplittingInputs();
-                        drawPolarPlotBasedOnMode();
-                        console.log("Data loaded successfully.");
-
+                        // Use the helper function here
+                        loadDataFromObject(loadedData); 
                     } catch (err) {
                         console.error("Failed to load or parse file:", err);
                         displayError("Failed to load file. It may be corrupted or not a valid JSON export.");
@@ -1943,6 +2642,7 @@
         function setupTableCheckboxLogic() {
             const stdHeaderCB = document.getElementById('selectAllStandard');
             const kicHeaderCB = document.getElementById('selectAllKnownIC');
+            const trimHeaderCB = document.getElementById('selectAllTrim');
 
             if (stdHeaderCB) {
                 stdHeaderCB.addEventListener('change', () => {
@@ -1955,6 +2655,13 @@
                 kicHeaderCB.addEventListener('change', () => {
                     const checkboxes = knownIcTableBody.querySelectorAll('.loc-checkbox-knownic');
                     checkboxes.forEach(cb => cb.checked = kicHeaderCB.checked);
+                });
+            }
+            
+            if (trimHeaderCB) {
+                trimHeaderCB.addEventListener('change', () => {
+                    const checkboxes = trimBalancingTableBody.querySelectorAll('.loc-checkbox-trim');
+                    checkboxes.forEach(cb => cb.checked = trimHeaderCB.checked);
                 });
             }
 
@@ -1989,19 +2696,34 @@
                     updateHeaderState(knownIcTableBody, kicHeaderCB, '.loc-checkbox-knownic');
                 }
             });
+            
+            trimBalancingTableBody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('loc-checkbox-trim')) {
+                    updateHeaderState(trimBalancingTableBody, trimHeaderCB, '.loc-checkbox-trim');
+                }
+            });
         }
 
-        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', (event) => {
             initializeData(); 
             updateGlobalTrialWeightFields();
             setupTableCheckboxLogic(); 
+            
+            // ** NEW: Call setup for interactivity **
+            setupCanvasInteractivity();
+
+            document.getElementById('finalActionAdd').addEventListener('change', (e) => {
+                if (e.target.checked) lastBalancingAction = 'add';
+            });
+            document.getElementById('finalActionRemove').addEventListener('change', (e) => {
+                if (e.target.checked) lastBalancingAction = 'remove';
+            });
+            
             switchTab(document.querySelector('.tab-button.active'), document.querySelector('.tab-content:not(.hidden)'));
             
             plotLocationLabelSpan.textContent = measurementLocationSelect.value;
             currentLocSplittingSpan.textContent = measurementLocationSelect.value;
 
-            // Initial plot draw on load
             drawPolarPlotBasedOnMode();
         });
         
