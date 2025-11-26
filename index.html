@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en"> 
 <head>
@@ -371,6 +370,11 @@
                     <h2 class="text-xl font-semibold mb-4 text-purple-700 dark:text-purple-300">Correction with Known IC</h2>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Check one or more locations to include in calculation.</p>
                     <div class="overflow-x-auto">
+                      <div class="flex justify-end mb-2">
+    <button id="btnClearReadingsKnownIC" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-1 px-3 rounded transition">
+        <i class="fas fa-eraser mr-1"></i> Clear Readings (Keep ICs)
+    </button>
+</div>
                         <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
@@ -405,17 +409,19 @@
                     <div class="overflow-x-auto mb-6">
                         <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-indigo-50 dark:bg-indigo-900/50">
-                                <tr>
-                                    <th class="px-2 py-2 text-center font-medium text-gray-500 dark:text-gray-400 tracking-wider">
-                                        <input type="checkbox" id="selectAllTrim" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" title="Select All">
-                                    </th>
-                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Location</th>
-                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Residual Amp</th>
-                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Residual Phase</th>
-                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Mag</th>
-                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Angle</th>
-                                </tr>
-                            </thead>
+    <tr>
+        <th class="px-2 py-2 text-center font-medium text-gray-500 dark:text-gray-400 tracking-wider">
+            <input type="checkbox" id="selectAllTrim" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" title="Select All">
+        </th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Location</th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Residual Amp</th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Residual Phase</th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Mag</th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">IC Angle</th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider border-l border-indigo-200 dark:border-indigo-700 pl-3">Post-Trim Amp</th>
+        <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400 tracking-wider">Post-Trim Phase</th>
+    </tr>
+</thead>
                             <tbody id="trimBalancingTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 </tbody>
                         </table>
@@ -708,6 +714,45 @@
 
         document.getElementById('cloudResultsModal').classList.remove('hidden');
     });
+    // Listener for the new "Clear Readings Only" button
+document.getElementById('btnClearReadingsKnownIC').addEventListener('click', () => {
+    // 1. Confirm intent so user doesn't accidentally wipe data
+    if (!confirm("Are you sure? This will clear Original & Final vibration data but KEEP the Influence Coefficients.")) {
+        return;
+    }
+
+    // 2. Loop through all locations and clear ONLY the run data
+    locations.forEach(loc => {
+        // Clear Original Run
+        balancingData[loc].originalAmp = null;
+        balancingData[loc].originalAngle = null;
+        
+        // Clear Final/Residual Run
+        balancingData[loc].finalAmp = null;
+        balancingData[loc].finalAngle = null;
+
+        // Also clear Trial Run data (since we are using Known IC, this is irrelevant/confusing to keep)
+        balancingData[loc].trialRunAmp = null;
+        balancingData[loc].trialRunAngle = null;
+        
+        // Clear any previous calculated correction results
+        balancingData[loc].correctionMass = null;
+        balancingData[loc].correctionAngle = null;
+        balancingData[loc].removalMass = null;
+        balancingData[loc].removalAngle = null;
+
+        // NOTE: We specifically DO NOT touch knownICMag, knownICAngle, calculatedICMag, or calculatedICAngle
+    });
+
+    // 3. Refresh the UI
+    populateInputTables(); // This re-renders the inputs with empty strings for Amps/Angles but keeps ICs
+    
+    // 4. Hide old results
+    document.getElementById('resultsDisplay').classList.add('hidden');
+    
+    // 5. Update the plot (it will likely go blank or show nothing until new data is entered)
+    drawPolarPlotBasedOnMode();
+});
         // --- Global Variables & DOM Elements ---
         const locations = ["IBH", "IBV", "IBA", "OBH", "OBV", "OBA"];
         let balancingData = {}; 
@@ -1088,7 +1133,6 @@ supabase.auth.onAuthStateChange((event, session) => {
             scale(scalar) { return Vector.fromComponents(this.x * scalar, this.y * scalar); }
         }
 
-        // --- Table Population and Data Sync ---
         function populateInputTables() {
             let stdHtml = '';
             let kicHtml = '';
@@ -1096,23 +1140,44 @@ supabase.auth.onAuthStateChange((event, session) => {
 
             for (const loc of locations) {
                 const data = balancingData[loc];
+                
+                // --- Formatting Helper Logic (FIX for Point #1) ---
+                // We ensure that if a value exists, it is formatted to fixed decimals strings
+                // This fixes the "0.0310713..." vs "0.031" discrepancy.
+                
                 const o_amp = data.originalAmp !== null ? data.originalAmp : '';
                 const o_ang = data.originalAngle !== null ? data.originalAngle : '';
                 const f_amp = data.finalAmp !== null ? data.finalAmp : ''; 
                 const f_ang = data.finalAngle !== null ? data.finalAngle : '';
                 
-                const icValMag = (data.calculatedICMag !== null) ? data.calculatedICMag.toFixed(3) : (data.knownICMag !== null ? data.knownICMag : '');
-                const icValAng = (data.calculatedICAngle !== null) ? data.calculatedICAngle.toFixed(1) : (data.knownICAngle !== null ? data.knownICAngle : '');
+                // Formatted display values for IC Magnitude (3 decimals)
+                let displayICMag = '';
+                if (data.calculatedICMag !== null) {
+                    displayICMag = data.calculatedICMag.toFixed(3);
+                } else if (data.knownICMag !== null) {
+                    displayICMag = data.knownICMag.toFixed(3); // Applied formatting here
+                }
 
-                // Standard Table Row
+                // Formatted display values for IC Angle (1 decimal)
+                let displayICAng = '';
+                if (data.calculatedICAngle !== null) {
+                    displayICAng = data.calculatedICAngle.toFixed(1);
+                } else if (data.knownICAngle !== null) {
+                    displayICAng = data.knownICAngle.toFixed(1); // Applied formatting here
+                }
+                
+                const trialRunAmp = data.trialRunAmp !== null ? data.trialRunAmp : '';
+                const trialRunAngle = data.trialRunAngle !== null ? data.trialRunAngle : '';
+
+                // Standard Table Row (Outputs are already spans, but we use the formatted vars for consistency)
                 stdHtml += `
                     <tr class="align-middle">
                         <td class="px-2 py-1.5 text-center"><input type="checkbox" class="loc-checkbox-standard h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-location="${loc}"></td>
                         <td class="px-2 py-1.5 font-medium">${loc}</td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_o_amp_${loc}" value="${o_amp}" data-loc="${loc}" data-prop="originalAmp"></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_o_phase_${loc}" value="${o_ang}" data-loc="${loc}" data-prop="originalAngle"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_ot_amp_${loc}" value="${data.trialRunAmp || ''}" data-loc="${loc}" data-prop="trialRunAmp"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_ot_phase_${loc}" value="${data.trialRunAngle || ''}" data-loc="${loc}" data-prop="trialRunAngle"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_ot_amp_${loc}" value="${trialRunAmp}" data-loc="${loc}" data-prop="trialRunAmp"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_ot_phase_${loc}" value="${trialRunAngle}" data-loc="${loc}" data-prop="trialRunAngle"></td>
                         <td class="px-2 py-1.5 text-center"><span class="table-output" id="std_ic_mag_${loc}">${data.calculatedICMag ? data.calculatedICMag.toFixed(3) : '---'}</span></td>
                         <td class="px-2 py-1.5 text-center"><span class="table-output" id="std_ic_ang_${loc}">${data.calculatedICAngle ? data.calculatedICAngle.toFixed(1) : '---'}</span></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="std_f_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
@@ -1120,31 +1185,40 @@ supabase.auth.onAuthStateChange((event, session) => {
                     </tr>
                 `;
 
-                // Known IC Table Row
+                // Known IC Table Row (Updated to use displayICMag/Ang)
                 kicHtml += `
                     <tr class="align-middle">
                         <td class="px-2 py-1.5 text-center"><input type="checkbox" class="loc-checkbox-knownic h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" data-location="${loc}"></td>
                         <td class="px-2 py-1.5 font-medium">${loc}</td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_o_amp_${loc}" value="${o_amp}" data-loc="${loc}" data-prop="originalAmp"></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_o_phase_${loc}" value="${o_ang}" data-loc="${loc}" data-prop="originalAngle"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_ic_mag_${loc}" value="${data.knownICMag || (data.calculatedICMag ? data.calculatedICMag.toFixed(3) : '')}" data-loc="${loc}" data-prop="knownICMag"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_ic_ang_${loc}" value="${data.knownICAngle || (data.calculatedICAngle ? data.calculatedICAngle.toFixed(1) : '')}" data-loc="${loc}" data-prop="knownICAngle"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_ic_mag_${loc}" value="${displayICMag}" data-loc="${loc}" data-prop="knownICMag"></td>
+                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_ic_ang_${loc}" value="${displayICAng}" data-loc="${loc}" data-prop="knownICAngle"></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_f_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
                         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="kic_f_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
                     </tr>
                 `;
 
-                // Trim Table Row
+                // Trim Table Row (Updated to use displayICMag/Ang)
                 trimHtml += `
-                    <tr class="align-middle">
-                        <td class="px-2 py-1.5 text-center"><input type="checkbox" class="loc-checkbox-trim h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" data-location="${loc}"></td>
-                        <td class="px-2 py-1.5 font-medium">${loc}</td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_mag_${loc}" value="${icValMag}" data-loc="${loc}" data-prop="knownICMag"></td>
-                        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_ang_${loc}" value="${icValAng}" data-loc="${loc}" data-prop="knownICAngle"></td>
-                    </tr>
-                `;
+    <tr class="align-middle">
+        <td class="px-2 py-1.5 text-center"><input type="checkbox" class="loc-checkbox-trim h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" data-location="${loc}"></td>
+        <td class="px-2 py-1.5 font-medium">${loc}</td>
+        
+        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
+        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
+        
+        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_mag_${loc}" value="${displayICMag}" data-loc="${loc}" data-prop="knownICMag"></td>
+        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_ang_${loc}" value="${displayICAng}" data-loc="${loc}" data-prop="knownICAngle"></td>
+        
+        <td class="px-1 py-1.5 border-l border-gray-200 dark:border-gray-700 pl-3">
+            <input type="number" step="any" class="table-input border-indigo-300 dark:border-indigo-700" id="trim_final_amp_${loc}" value="${data.trimFinalAmp !== null ? data.trimFinalAmp : ''}" data-loc="${loc}" data-prop="trimFinalAmp" placeholder="Final">
+        </td>
+        <td class="px-1 py-1.5">
+            <input type="number" step="any" class="table-input border-indigo-300 dark:border-indigo-700" id="trim_final_phase_${loc}" value="${data.trimFinalAngle !== null ? data.trimFinalAngle : ''}" data-loc="${loc}" data-prop="trimFinalAngle" placeholder="Final">
+        </td>
+    </tr>
+`;
             }
             standardBalancingTableBody.innerHTML = stdHtml;
             knownIcTableBody.innerHTML = kicHtml;
@@ -1224,7 +1298,8 @@ supabase.auth.onAuthStateChange((event, session) => {
                     calculatedICMag: null, calculatedICAngle: null, 
                     correctionMass: null, correctionAngle: null,
                     removalMass: null, removalAngle: null,
-                    finalAmp: null, finalAngle: null, 
+                    finalAmp: null, finalAngle: null,
+                    trimFinalAmp: null, trimFinalAngle: null,
                     lastOriginalForPlot: null, 
                 };
             });
@@ -1924,14 +1999,13 @@ supabase.auth.onAuthStateChange((event, session) => {
             const hsColor = isDarkMode ? "#F87171" : "red";
             const heavySColor = isDarkMode ? "#93C5FD" : "darkblue";
 
-            // 1. Setup Canvas - FORCE SQUARE ASPECT RATIO to fix cropping
+            // 1. Setup Canvas - FORCE SQUARE ASPECT RATIO
             const containerWidth = document.getElementById('polarPlotContainer').clientWidth;
             canvas.width = containerWidth;
-            canvas.height = containerWidth; // Make height equal width for a perfect square
+            canvas.height = containerWidth; 
             
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            // Reduced radius to 75% to prevent top/bottom cropping of labels/dots
             const plotRadius = Math.min(centerX, centerY) * 0.75; 
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1945,7 +2019,6 @@ supabase.auth.onAuthStateChange((event, session) => {
             if (OT_vec && OT_vec.magnitude > 1e-9) vibrationAmps.push(OT_vec.magnitude);
             if (T_eff_vec && T_eff_vec.magnitude > 1e-9) vibrationAmps.push(T_eff_vec.magnitude);
             if (vibrationAmps.length > 0) { scaleDeterminingAmplitude = Math.max(...vibrationAmps); }
-            // Ensure scale isn't too small if values are tiny
             if (scaleDeterminingAmplitude < 0.1) scaleDeterminingAmplitude = 1.0;
 
             const scale = plotRadius / scaleDeterminingAmplitude;
@@ -1959,11 +2032,10 @@ supabase.auth.onAuthStateChange((event, session) => {
             for (let i = 1; i <= numCircles; i++) {
                 const r = (plotRadius / numCircles) * i;
                 ctx.beginPath(); ctx.arc(centerX, centerY, r, 0, 2 * Math.PI); ctx.stroke();
-                // Draw scale text nicely on the 45 degree line
                 const val = (scaleDeterminingAmplitude / numCircles) * i;
-                const labelX = centerX + r * 0.707; // cos(45)
-                const labelY = centerY - r * 0.707; // sin(45)
-                ctx.clearRect(labelX - 10, labelY - 6, 20, 12); // Clear background for text
+                const labelX = centerX + r * 0.707; 
+                const labelY = centerY - r * 0.707; 
+                ctx.clearRect(labelX - 10, labelY - 6, 20, 12); 
                 ctx.fillText(val.toFixed(1), labelX, labelY);
             }
 
@@ -1973,11 +2045,10 @@ supabase.auth.onAuthStateChange((event, session) => {
                 const rad = toRadians(i * angleStep);
                 const xEnd = centerX + plotRadius * Math.cos(rad);
                 const yEnd = centerY - plotRadius * Math.sin(rad);
-                ctx.globalAlpha = 0.3; // Faint lines
+                ctx.globalAlpha = 0.3; 
                 ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(xEnd, yEnd); ctx.stroke();
                 ctx.globalAlpha = 1.0;
                 
-                // Vane Labels
                 let vaneLabel = (rotationDir === "CW") ? i : ((i === 0) ? 0 : (numVanesPlot - i));
                 const lx = centerX + (plotRadius + 15) * Math.cos(rad);
                 const ly = centerY - (plotRadius + 15) * Math.sin(rad);
@@ -1986,9 +2057,8 @@ supabase.auth.onAuthStateChange((event, session) => {
                 ctx.fillText(vaneLabel, lx, ly);
             }
             
-            // 5. Draw Vectors (NO TEXT on plot, just lines)
-            let o_endX, o_endY; // To chain T_eff if needed
-
+            // 5. Draw Vectors
+            let o_endX, o_endY; 
             if (O_vec && O_vec.magnitude > 1e-9) {
                 const res = drawSingleVector(ctx, O_vec, isDarkMode ? "#60A5FA" : "blue", "Original (O)", centerX, centerY, scale, canvas.width);
                 o_endX = res.endX; o_endY = res.endY;
@@ -1997,7 +2067,6 @@ supabase.auth.onAuthStateChange((event, session) => {
                 drawSingleVector(ctx, OT_vec, isDarkMode ? "#F87171" : "red", "Trial (O+T)", centerX, centerY, scale, canvas.width); 
             } 
             if (T_eff_vec && T_eff_vec.magnitude > 1e-9) {
-                // T_eff starts where O ends
                 drawSingleVector(ctx, T_eff_vec, isDarkMode ? "#4ADE80" : "green", "Effective (T_eff)", centerX, centerY, scale, canvas.width, o_endX, o_endY); 
             }
             if (Minus_O_vec_plot && Minus_O_vec_plot.magnitude > 1e-9) { 
@@ -2005,34 +2074,41 @@ supabase.auth.onAuthStateChange((event, session) => {
                 drawSingleVector(ctx, Minus_O_vec_plot, isDarkMode ? "#C084FC" : "purple", label, centerX, centerY, scale, canvas.width); 
             }
             
-            // Weights
             const wcLabel = (document.querySelector('input[name="correctionStrategy"]:checked')?.value === 'keep') ? "Wc (Add)" : "Correction (Wc)";
             if (Wc_vec_plot && Wc_vec_plot.magnitude > 1e-9) {
-                // Cap drawing of very large weights so they don't go off screen
                 let drawVec = Wc_vec_plot;
                 if(drawVec.magnitude > scaleDeterminingAmplitude) {
-                    drawVec = new Vector(scaleDeterminingAmplitude, Wc_vec_plot.angleDeg); // Visual cap only
+                    drawVec = new Vector(scaleDeterminingAmplitude, Wc_vec_plot.angleDeg); 
                 }
-                drawSingleVector(ctx, drawVec, colorWc, wcLabel, centerX, centerY, scale, canvas.width, undefined, undefined, null, Wc_vec_plot); // Pass original for data
+                drawSingleVector(ctx, drawVec, colorWc, wcLabel, centerX, centerY, scale, canvas.width, undefined, undefined, null, Wc_vec_plot); 
             }
 
             if (Ws1_vec && Ws1_vec.magnitude > 1e-9) drawSingleVector(ctx, Ws1_vec, colorWs1, "Split W1", centerX, centerY, scale, canvas.width);
             if (Ws2_vec && Ws2_vec.magnitude > 1e-9) drawSingleVector(ctx, Ws2_vec, colorWs2, "Split W2", centerX, centerY, scale, canvas.width);
 
-            // 6. Spots (High Spot / Heavy Spot)
+            // 6. Spots (High Spot / Heavy Spot) - With Value Capture
+            
+            // Initialize Legend Text Variables
+            let highSpotLegendVal = '---';
+            let heavySpotLegendVal = '---';
+
             if (O_vec && O_vec.magnitude > 1e-9) {
-                // High Spot
+                // --- High Spot Logic ---
                 let hsAngle = O_vec.angleDeg;
                 if (rotationDir === "CCW" && hsAngle !== 0) hsAngle = normalizeAngle(360 - hsAngle);
+                
                 const hsRad = toRadians(hsAngle);
                 const hsX = centerX + plotRadius * Math.cos(hsRad);
                 const hsY = centerY - plotRadius * Math.sin(hsRad);
                 
                 ctx.beginPath(); ctx.arc(hsX, hsY, 5, 0, 2*Math.PI); ctx.fillStyle = hsColor; ctx.fill();
-                // Store hit data for tooltips
-                vectorHitBoxes.push({type:'point', x:hsX, y:hsY, r:8, label:'High Spot (HS)', val:`${O_vec.angleDeg.toFixed(1)}°`});
+                
+                // Set Legend Value (Using the raw angle, consistent with tooltip)
+                highSpotLegendVal = `${O_vec.angleDeg.toFixed(1)}°`;
+                
+                vectorHitBoxes.push({type:'point', x:hsX, y:hsY, r:8, label:'High Spot (HS)', val: highSpotLegendVal});
 
-                // Heavy Spot
+                // --- Heavy Spot Logic ---
                 const currentLocData = balancingData[measurementLocationSelect.value];
                 let lagAngle = null;
                 if (currentLocData.calculatedICAngle !== null) lagAngle = currentLocData.calculatedICAngle;
@@ -2041,17 +2117,24 @@ supabase.auth.onAuthStateChange((event, session) => {
                 if (lagAngle !== null) {
                      let hSAngle = normalizeAngle(O_vec.angleDeg - lagAngle);
                      let hSDisplay = hSAngle;
+                     
+                     // Adjust for Visual Plotting
                      if (rotationDir === "CCW" && hSDisplay !== 0) hSDisplay = normalizeAngle(360 - hSDisplay);
+                     
                      const hSRad = toRadians(hSDisplay);
                      const hSX = centerX + plotRadius * Math.cos(hSRad);
                      const hSY = centerY - plotRadius * Math.sin(hSRad);
                      
                      ctx.beginPath(); ctx.arc(hSX, hSY, 5, 0, 2*Math.PI); ctx.fillStyle = heavySColor; ctx.fill();
-                     vectorHitBoxes.push({type:'point', x:hSX, y:hSY, r:8, label:'Heavy Spot (hS)', val:`${hSAngle.toFixed(1)}°`});
+                     
+                     // Set Legend Value (Using the math angle, consistent with tooltip)
+                     heavySpotLegendVal = `${hSAngle.toFixed(1)}°`;
+                     
+                     vectorHitBoxes.push({type:'point', x:hSX, y:hSY, r:8, label:'Heavy Spot (hS)', val: heavySpotLegendVal});
                 }
             }
 
-            // 7. GENERATE DETAILED LEGEND (Bottom Area)
+            // 7. GENERATE DETAILED LEGEND (UPDATED with Values)
             const fmt = (vec) => vec && vec.magnitude > 1e-9 ? `${vec.magnitude.toFixed(2)} @ ${vec.angleDeg.toFixed(1)}°` : '---';
             
             plotLegendDiv.innerHTML = `
@@ -2075,11 +2158,14 @@ supabase.auth.onAuthStateChange((event, session) => {
                     <span class="legend-color-box" style="background-color:${isDarkMode?'#C084FC':'purple'}"></span> 
                     Target: <span class="legend-value text-m font-semibold text-gray-500 dark:text-gray-400">${fmt(Minus_O_vec_plot)}</span>
                 </div>
+                
                 <div class="col-span-1 ${isDarkMode?'text-red-400':'text-red-600'}">
-                     <span class="legend-dot" style="background-color:${hsColor}"></span> High Spot (HS)
+                     <span class="legend-dot" style="background-color:${hsColor}"></span> 
+                     High Spot (HS): <span class="legend-value text-gray-800 dark:text-gray-200 font-bold">${highSpotLegendVal}</span>
                 </div>
                 <div class="col-span-1 ${isDarkMode?'text-blue-300':'text-blue-900'}">
-                     <span class="legend-dot" style="background-color:${heavySColor}"></span> Heavy Spot (hS)
+                     <span class="legend-dot" style="background-color:${heavySColor}"></span> 
+                     Heavy Spot (hS): <span class="legend-value text-gray-800 dark:text-gray-200 font-bold">${heavySpotLegendVal}</span>
                 </div>
             `;
             
@@ -2301,11 +2387,10 @@ supabase.auth.onAuthStateChange((event, session) => {
         
         // --- Footer Button Actions & Data Management (Save, Load, Export, Print, Reset) ---
         
-        // *** MODIFIED: Heavily updated for professional report (Forces Light Mode) ***
         printReportButton.addEventListener('click', () => { 
-            const isDarkMode = false; // *** Force Light Mode for reports ***
+            const isDarkMode = false; // Force Light Mode
             
-            // 1. Get all data
+            // 1. Get All Data
             const eqName = getInputValue('equipmentName', 'N/A');
             const plant = getInputValue('plantName', 'N/A');
             const date = getInputValue('reportDate', 'N/A');
@@ -2316,40 +2401,55 @@ supabase.auth.onAuthStateChange((event, session) => {
             const rotorType = getInputValue('rotorTypeSelect', 'N/A');
             const logoUrl = "https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png";
             
-            // Get calculation data
             const plotLocation = measurementLocationSelect.value;
+            const data = balancingData[plotLocation];
             const hasStdResults = !resultsDisplayDiv.classList.contains('hidden');
-            const hasSplitResults = !splitResultsDisplayDiv.classList.contains('hidden');
             
-            // Get final weights from the stored data for the *overall* plot location
-            const addMass = (balancingData[plotLocation].correctionMass !== null) ? balancingData[plotLocation].correctionMass.toFixed(3) : '---';
-            const addAngle = (balancingData[plotLocation].correctionAngle !== null) ? balancingData[plotLocation].correctionAngle.toFixed(1) : '---';
-            const removeMass = (balancingData[plotLocation].removalMass !== null) ? balancingData[plotLocation].removalMass.toFixed(3) : '---';
-            const removeAngle = (balancingData[plotLocation].removalAngle !== null) ? balancingData[plotLocation].removalAngle.toFixed(1) : '---';
+            // --- NEW: Get Trial Weight Data ---
+            const twMass = balancingData.trialWeight.mass !== null ? balancingData.trialWeight.mass.toFixed(2) : '---';
+            const twAngle = balancingData.trialWeight.angle !== null ? balancingData.trialWeight.angle.toFixed(1) : '---';
+            const isStandardMode = lastCalculationMode.includes('Standard');
+
+            // Final Action Strings
+            const addMass = (data.correctionMass !== null) ? data.correctionMass.toFixed(3) : '---';
+            const addAngle = (data.correctionAngle !== null) ? data.correctionAngle.toFixed(1) : '---';
+            const removeMass = (data.removalMass !== null) ? data.removalMass.toFixed(3) : '---';
+            const removeAngle = (data.removalAngle !== null) ? data.removalAngle.toFixed(1) : '---';
             
-            // *** NEW: Get the logged final action ***
             let finalActionHTML = '';
             if (lastBalancingAction === 'add') {
-                finalActionHTML = `
-                    <p><strong>Action Taken:</strong> Weight Addition</p>
-                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${addMass} grams</p>
-                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${addAngle} &deg;</p>
-                `;
+                finalActionHTML = `<p><strong>Action Taken:</strong> Weight Addition (${addMass} g @ ${addAngle}&deg;)</p>`;
             } else {
-                finalActionHTML = `
-                    <p><strong>Action Taken:</strong> Weight Removal</p>
-                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${removeMass} grams</p>
-                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${removeAngle} &deg;</p>
-                `;
+                finalActionHTML = `<p><strong>Action Taken:</strong> Weight Removal (${removeMass} g @ ${removeAngle}&deg;)</p>`;
             }
             
-            // Get data table
             const dataTableHtml = buildReportDataTable();
-            
-            // 2. Get plot image
             const plotImage = canvas.toDataURL('image/png');
             
-            // 3. Construct HTML
+            // Legend Construction
+            const fmt = (mag, ang) => (mag !== null && ang !== null) ? `${mag.toFixed(2)} @ ${ang.toFixed(1)}&deg;` : '---';
+            
+            let hsText = '---';
+            let heavyText = '---';
+            if (data.originalAngle !== null) {
+                hsText = `${data.originalAngle.toFixed(1)}&deg;`;
+                let icAng = (data.calculatedICAngle !== null) ? data.calculatedICAngle : data.knownICAngle;
+                if (icAng !== null) {
+                    let heavyVal = normalizeAngle(data.originalAngle - icAng);
+                    heavyText = `${heavyVal.toFixed(1)}&deg;`;
+                }
+            }
+
+            const legendHtml = `
+                <div class="legend-grid">
+                    <div style="color: blue;"><strong><span style="display:inline-block;width:10px;height:10px;background:blue;margin-right:5px;"></span>Original:</strong> ${fmt(data.originalAmp, data.originalAngle)}</div>
+                    <div style="color: red;"><strong><span style="display:inline-block;width:10px;height:10px;background:red;margin-right:5px;"></span>Trial:</strong> ${fmt(data.trialRunAmp, data.trialRunAngle)}</div>
+                    <div style="color: orange;"><strong><span style="display:inline-block;width:10px;height:10px;background:orange;margin-right:5px;"></span>Corr (Wc):</strong> ${fmt(data.correctionMass, data.correctionAngle)}</div>
+                    <div style="color: #F87171;"><strong><span style="display:inline-block;width:8px;height:8px;background:#F87171;border-radius:50%;margin-right:5px;"></span>High Spot:</strong> ${hsText}</div>
+                    <div style="color: darkblue;"><strong><span style="display:inline-block;width:8px;height:8px;background:darkblue;border-radius:50%;margin-right:5px;"></span>Heavy Spot:</strong> ${heavyText}</div>
+                </div>
+            `;
+
             const reportHtml = `
                 <!DOCTYPE html>
                 <html lang="en">
@@ -2358,81 +2458,30 @@ supabase.auth.onAuthStateChange((event, session) => {
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
                     <title>Balancing Report - ${eqName}</title>
                     <style>
-                        body { 
-                            font-family: Arial, sans-serif; margin: 0; padding: 0; 
-                            background-color: ${isDarkMode ? '#1F2937' : '#FFFFFF'};
-                            color: ${isDarkMode ? '#D1D5DB' : '#000000'};
-                            font-size: 10pt;
-                        }
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 10pt; color: #000; }
                         @page { size: A4; margin: 15mm; }
                         .container { width: 100%; max-width: 180mm; margin: 0 auto; }
-                        .header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            border-bottom: 2px solid ${isDarkMode ? '#60A5FA' : '#003366'};
-                            padding-bottom: 10px;
-                        }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #003366; padding-bottom: 5px; margin-bottom: 10px; }
                         .header img { height: 40px; }
-                        .header h1 {
-                            font-size: 18pt;
-                            color: ${isDarkMode ? '#60A5FA' : '#003366'};
-                            margin: 0;
-                            text-align: right;
-                        }
-                        h2 { 
-                            font-size: 14pt;
-                            color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
-                            border-bottom: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; 
-                            padding-bottom: 3px; margin-top: 20px; 
-                        }
-                        .details-grid {
-                            display: grid;
-                            grid-template-columns: 1fr 1fr;
-                            gap: 0 20px;
-                        }
-                        .details-grid p {
-                            margin: 4px 0;
-                            display: grid;
-                            grid-template-columns: 140px 1fr;
-                        }
-                        .details-grid strong { color: ${isDarkMode ? '#F9FAFB' : '#333'}; }
-                        .data-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-top: 10px;
-                            font-size: 9pt;
-                        }
-                        .data-table th, .data-table td { 
-                            border: 1px solid ${isDarkMode ? '#374151' : '#ddd'}; 
-                            padding: 6px; 
-                            text-align: left; 
-                        }
-                        .data-table th { background-color: ${isDarkMode ? '#374151' : '#f2f2f2'}; }
-                        .results-group {
-                            margin-top: 15px;
-                            padding: 10px;
-                            background-color: ${isDarkMode ? '#27272a' : '#f9f9f9'};
-                            border: 1px solid ${isDarkMode ? '#374151' : '#eee'};
-                            border-radius: 5px;
-                        }
-                        .results-group p { margin: 5px 0 5px 10px; font-size: 11pt; }
-                        .results-group strong { color: ${isDarkMode ? '#F9FAFB' : '#333'}; }
-                        .plot-container { text-align: center; margin-top: 20px; page-break-inside: avoid; }
-                        .plot-container img { max-width: 90%; height: auto; border: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; }
-                        
-                        @media print {
-                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                            h2 { page-break-after: avoid; }
-                            .plot-container, .results-group { page-break-inside: avoid; }
-                        }
+                        .header h1 { font-size: 16pt; color: #003366; margin: 0; }
+                        h2 { font-size: 12pt; color: #003366; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-top: 15px; margin-bottom: 5px; }
+                        .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; }
+                        .details-grid p { margin: 2px 0; }
+                        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 9pt; }
+                        .data-table th, .data-table td { border: 1px solid #ddd; padding: 4px; text-align: left; }
+                        .data-table th { background-color: #f2f2f2; }
+                        .results-group { margin-top: 10px; padding: 8px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px; }
+                        .results-group p { margin: 3px 0; }
+                        .plot-container { text-align: center; margin-top: 15px; page-break-inside: avoid; }
+                        .plot-container img { max-width: 70%; height: auto; border: 1px solid #ccc; }
+                        .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px; font-size: 8pt; text-align: left; padding: 5px; border: 1px solid #eee; }
                     </style>
                 </head>
                 <body>
                     <div class="container">
                         <div class="header">
                             <img src="${logoUrl}" alt="Logo">
-                            <h1>Single Plane Balancing Report</h1>
+                            <h1>Balancing Report</h1>
                         </div>
                         
                         <h2>Job Details</h2>
@@ -2447,55 +2496,38 @@ supabase.auth.onAuthStateChange((event, session) => {
                             <p><strong><i class="fas fa-sync-alt mr-2"></i> Rotation:</strong> ${rotDir}</p>
                         </div>
 
-                        <h2>Data Used in Calculation</h2>
+                        <h2>Data Used</h2>
                         ${dataTableHtml}
                         
-                        ${hasStdResults || lastCalculationMode.includes('Trim') ? `
-                        <h2>Balancing Summary</h2>
+                        ${(hasStdResults || lastCalculationMode.includes('Trim')) ? `
+                        <h2>Summary</h2>
                         <div class="results-group">
-                            <p><strong>Balancing Mode:</strong> ${lastCalculationMode}</p>
-                            <p><strong>Plot Location:</strong> ${plotLocation}</p>
-                            <hr style="border-color: ${isDarkMode ? '#374151' : '#ddd'}; margin: 10px 0;">
+                            <p><strong>Mode:</strong> ${lastCalculationMode}</p>
+                            ${isStandardMode ? `<p><strong>Trial Weight:</strong> ${twMass} g @ ${twAngle}&deg;</p>` : ''}
                             ${finalActionHTML}
                         </div>
                         ` : ''}
-                        
-                        ${hasSplitResults ? `
-                        <h2>Split Weight Results</h2>
-                        <div class="results-group">
-                            <p><strong>Split Weight 1 (W1):</strong> ${getSpanValue('splitWeight1Mass')} grams @ ${getSpanValue('splitWeight1Angle')}&deg;</p>
-                            <p><strong>Split Weight 2 (W2):</strong> ${getSpanValue('splitWeight2Mass')} grams @ ${getSpanValue('splitWeight2Angle')}&deg;</p>
-                        </div>
-                        ` : ''}
 
-                        <h2><i class="fas fa-bullseye"></i> Polar Plot (at ${plotLocation})</h2>
+                        <h2>Polar Plot (${plotLocation})</h2>
                         <div class="plot-container">
                             <img src="${plotImage}" alt="Polar Plot">
+                            ${legendHtml}
                         </div>
                     </div>
                 </body>
                 </html>
             `;
             
-            // 4. Open, write, print, close
             const printWindow = window.open('', '_blank');
-            printWindow.document.open();
             printWindow.document.write(reportHtml);
             printWindow.document.close();
-            
-            printWindow.onload = function() {
-                printWindow.focus();
-                setTimeout(() => {
-                    printWindow.print();
-                }, 500); 
-            };
+            printWindow.onload = function() { setTimeout(() => { printWindow.print(); }, 500); };
         });
 
-        // *** MODIFIED: Heavily updated for professional report (Forces Light Mode) ***
         exportWordButton.addEventListener('click', () => { 
-            const isDarkMode = false; // *** Force Light Mode for reports ***
+            const isDarkMode = false;
 
-            // 1. Get all data
+            // 1. Get All Data
             const eqName = getInputValue('equipmentName', 'N/A');
             const plant = getInputValue('plantName', 'N/A');
             const date = getInputValue('reportDate', 'N/A');
@@ -2506,165 +2538,125 @@ supabase.auth.onAuthStateChange((event, session) => {
             const rotorType = getInputValue('rotorTypeSelect', 'N/A');
             
             const plotLocation = measurementLocationSelect.value;
+            const data = balancingData[plotLocation];
             const hasStdResults = !resultsDisplayDiv.classList.contains('hidden') || lastCalculationMode.includes('Trim');
-            const hasSplitResults = !splitResultsDisplayDiv.classList.contains('hidden');
             
-            const addMass = (balancingData[plotLocation].correctionMass !== null) ? balancingData[plotLocation].correctionMass.toFixed(3) : '---';
-            const addAngle = (balancingData[plotLocation].correctionAngle !== null) ? balancingData[plotLocation].correctionAngle.toFixed(1) : '---';
-            const removeMass = (balancingData[plotLocation].removalMass !== null) ? balancingData[plotLocation].removalMass.toFixed(3) : '---';
-            const removeAngle = (balancingData[plotLocation].removalAngle !== null) ? balancingData[plotLocation].removalAngle.toFixed(1) : '---';
+            // --- NEW: Trial Weight Data ---
+            const twMass = balancingData.trialWeight.mass !== null ? balancingData.trialWeight.mass.toFixed(2) : '---';
+            const twAngle = balancingData.trialWeight.angle !== null ? balancingData.trialWeight.angle.toFixed(1) : '---';
+            const isStandardMode = lastCalculationMode.includes('Standard');
+
+            // Formatters
+            const fmt = (mag, ang) => (mag !== null && ang !== null) ? `${mag.toFixed(2)} @ ${ang.toFixed(1)}` : '---';
             
-            // *** NEW: Get the logged final action ***
-            let finalActionHTML = '';
-            if (lastBalancingAction === 'add') {
-                finalActionHTML = `
-                    <p><strong>Action Taken:</strong> Weight Addition</p>
-                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${addMass} grams</p>
-                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${addAngle} &deg;</p>
-                `;
-            } else {
-                finalActionHTML = `
-                    <p><strong>Action Taken:</strong> Weight Removal</p>
-                    <p style="margin-left: 20px;"><strong>Mass:</strong> ${removeMass} grams</p>
-                    <p style="margin-left: 20px;"><strong>Angle:</strong> ${removeAngle} &deg;</p>
-                `;
+            let hsText = '---';
+            let heavyText = '---';
+            if (data.originalAngle !== null) {
+                hsText = `${data.originalAngle.toFixed(1)}`;
+                let icAng = (data.calculatedICAngle !== null) ? data.calculatedICAngle : data.knownICAngle;
+                if (icAng !== null) {
+                    heavyText = `${normalizeAngle(data.originalAngle - icAng).toFixed(1)}`;
+                }
             }
 
             const dataTableHtml = buildReportDataTable();
-            
-            // 2. Get plot image
             const plotImage = canvas.toDataURL('image/png');
 
-            // 3. Construct HTML string
-            const preHtml = `
-                <html xmlns:v="urn:schemas-microsoft-com:vml"
-                xmlns:o="urn:schemas-microsoft-com:office:office"
-                xmlns:w="urn:schemas-microsoft-com:office:word"
-                xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
-                xmlns="http://www.w3.org/TR/REC-html40">
-                <head>
-                    <meta charset="utf-8">
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            ${isDarkMode ? 'background-color:#1F2937; color:#D1D5DB;' : 'background-color:#FFFFFF; color:#000000;'}
-                            font-size: 10pt;
-                        }
-                        h1 { 
-                            font-size: 18pt;
-                            text-align: center; color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
-                            border-bottom: 2px solid ${isDarkMode ? '#60A5FA' : '#003366'};
-                        }
-                        h2 { 
-                            font-size: 14pt;
-                            color: ${isDarkMode ? '#60A5FA' : '#003366'}; 
-                            border-bottom: 1px solid ${isDarkMode ? '#374151' : '#ccc'}; 
-                        }
-                        p { margin: 5px 0; }
-                        table { border-collapse: collapse; }
-                        td { padding: 5px; }
-                        strong { color: ${isDarkMode ? '#F9FAFB' : '#333'}; }
-
-                        .details-grid {
-                            /* Word doesn't support grid, use a table */
-                        }
-                        .details-grid p {
-                            margin: 4px 0;
-                        }
-                        .data-table {
-                            width: 100%;
-                            border-collapse: collapse;
-                            margin-top: 10px;
-                            font-size: 9pt;
-                        }
-                        .data-table th, .data-table td { 
-                            border: 1px solid ${isDarkMode ? '#374151' : '#999'}; 
-                            padding: 6px; 
-                            text-align: left; 
-                        }
-                        .data-table th { background-color: ${isDarkMode ? '#374151' : '#f2f2f2'}; }
-                        .results-group {
-                            margin-top: 15px;
-                            padding: 10px;
-                            background-color: ${isDarkMode ? '#27272a' : '#f9f9f9'};
-                            border: 1px solid ${isDarkMode ? '#374151' : '#eee'};
-                        }
-                        .results-group p { margin: 5px 0 5px 10px; font-size: 11pt; }
-                    </style>
-                </head>
-                <body>
+            // Legend Table
+            const legendTable = `
+                <table style="width:100%; font-size:9pt; margin-top:5px; border:1px solid #ddd;">
+                    <tr>
+                        <td style="color:blue;"><strong>Original:</strong> ${fmt(data.originalAmp, data.originalAngle)}</td>
+                        <td style="color:red;"><strong>Trial:</strong> ${fmt(data.trialRunAmp, data.trialRunAngle)}</td>
+                        <td style="color:orange;"><strong>Corr (Wc):</strong> ${fmt(data.correctionMass, data.correctionAngle)}</td>
+                    </tr>
+                    <tr>
+                        <td style="color:#D32F2F;"><strong>High Spot:</strong> ${hsText}&deg;</td>
+                        <td style="color:darkblue;"><strong>Heavy Spot:</strong> ${heavyText}&deg;</td>
+                        <td></td>
+                    </tr>
+                </table>
             `;
             
-            const postHtml = "</body></html>";
+            // Final Action HTML for Word
+            let finalActionString = "";
+            if (lastBalancingAction === 'add') {
+                const addMass = (data.correctionMass !== null) ? data.correctionMass.toFixed(3) : '---';
+                const addAngle = (data.correctionAngle !== null) ? data.correctionAngle.toFixed(1) : '---';
+                finalActionString = `<p><strong>Action Taken:</strong> Weight Addition (${addMass} g @ ${addAngle}&deg;)</p>`;
+            } else {
+                const removeMass = (data.removalMass !== null) ? data.removalMass.toFixed(3) : '---';
+                const removeAngle = (data.removalAngle !== null) ? data.removalAngle.toFixed(1) : '---';
+                finalActionString = `<p><strong>Action Taken:</strong> Weight Removal (${removeMass} g @ ${removeAngle}&deg;)</p>`;
+            }
+
+            const preHtml = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+                <head><meta charset="utf-8"><title>Report</title>
+                <style>
+                    body { font-family: Arial; font-size: 10pt; }
+                    h1 { color: #003366; font-size: 16pt; margin-bottom: 10px; }
+                    h2 { color: #003366; font-size: 12pt; border-bottom: 1px solid #ccc; margin-top: 15px; margin-bottom: 5px; }
+                    table { border-collapse: collapse; width: 100%; }
+                    td, th { padding: 4px; text-align: left; }
+                    .data-table td, .data-table th { border: 1px solid #999; }
+                </style>
+                </head><body>
+            `;
             
-            // Using tables for Word compatibility instead of grid
             const contentHtml = `
                 <div class="container">
-                    <h1>Single Plane Balancing Report</h1>
+                    <h1>Balancing Report</h1>
                     
                     <h2>Job Details</h2>
-                    <table width="100%">
+                    <table style="border: none;">
                         <tr>
-                            <td width="50%"><p><strong>Equipment:</strong> ${eqName}</p></td>
-                            <td width="50%"><p><strong>Plant:</strong> ${plant}</p></td>
+                            <td width="50%"><strong>Equipment:</strong> ${eqName}</td>
+                            <td width="50%"><strong>Plant:</strong> ${plant}</td>
                         </tr>
                         <tr>
-                            <td><p><strong>Date:</strong> ${date}</p></td>
-                            <td><p><strong>Rotor RPM:</strong> ${rpm}</p></td>
+                            <td><strong>Date:</strong> ${date}</td>
+                            <td><strong>RPM:</strong> ${rpm}</td>
                         </tr>
                         <tr>
-                            <td><p><strong>Rated Power:</strong> ${power}</p></td>
-                            <td><p><strong>Number of Vanes:</strong> ${vanes}</p></td>
+                            <td><strong>Rated Power:</strong> ${power}</td>
+                            <td><strong>Vanes:</strong> ${vanes}</td>
                         </tr>
                         <tr>
-                            <td><p><strong>Rotor Type:</strong> ${rotorType}</p></td>
-                            <td><p><strong>Rotation:</strong> ${rotDir}</p></td>
+                            <td><strong>Rotation:</strong> ${rotDir}</td>
+                            <td><strong>Rotor Type:</strong> ${rotorType}</td>
                         </tr>
                     </table>
 
-                    <h2>Data Used in Calculation</h2>
-                    ${dataTableHtml}
+                    <h2>Data Used</h2>
+                    <div class="data-table">
+                        ${dataTableHtml}
+                    </div>
                     
                     ${hasStdResults ? `
-                    <h2>Balancing Summary</h2>
-                    <div class="results-group">
-                        <p><strong>Balancing Mode:</strong> ${lastCalculationMode}</p>
-                        <p><strong>Plot Location:</strong> ${plotLocation}</p>
-                        <hr style="border-color: ${isDarkMode ? '#374151' : '#ddd'}; margin: 10px 0;">
-                        ${finalActionHTML}
-                    </div>
-                    ` : ''}
-                    
-                    ${hasSplitResults ? `
-                    <h2>Split Weight Results</h2>
-                    <div class="results-group">
-                        <p><strong>Split Weight 1 (W1):</strong> ${getSpanValue('splitWeight1Mass')} grams @ ${getSpanValue('splitWeight1Angle')}&deg;</p>
-                        <p><strong>Split Weight 2 (W2):</strong> ${getSpanValue('splitWeight2Mass')} grams @ ${getSpanValue('splitWeight2Angle')}&deg;</p>
-                    </div>
+                    <h2>Summary</h2>
+                    <p><strong>Mode:</strong> ${lastCalculationMode}</p>
+                    ${isStandardMode ? `<p><strong>Trial Weight:</strong> ${twMass} g @ ${twAngle}&deg;</p>` : ''}
+                    ${finalActionString}
                     ` : ''}
 
-                    <h2>Polar Plot (at ${plotLocation})</h2>
-                    <div class="plot-container">
-                        <img src="${plotImage}" style="max-width:500px;" alt="Polar Plot">
+                    <h2>Polar Plot (${plotLocation})</h2>
+                    <div style="text-align:center;">
+                        <img src="${plotImage}" width="400" height="400" alt="Plot">
+                        ${legendTable}
                     </div>
                 </div>
             `;
             
-            const fullHtml = preHtml + contentHtml + postHtml;
+            const fullHtml = preHtml + contentHtml + "</body></html>";
 
-            // 4. Create Blob and download link
-            const blob = new Blob(['\ufeff', fullHtml], {
-                type: 'application/msword'
-            });
-            
-            const url = URL.createObjectURL(blob);
+            const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
             const link = document.createElement('a');
-            link.href = url;
-            link.download = `Balancing_Report_${eqName.replace(/ /g, '_') || 'Export'}.doc`;
+            link.href = URL.createObjectURL(blob);
+            link.download = `Report_${eqName}.doc`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(url);
         });
         
         saveDataButton.addEventListener('click', () => { 
