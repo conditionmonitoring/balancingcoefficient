@@ -719,13 +719,17 @@
         listContainer.innerHTML = '';
         
         data.forEach(record => {
+            const rpmVal = record.full_data?.details?.rotorRPM;
+            const rpmDisplay = rpmVal ? `${rpmVal} RPM` : 'N/A';
             const div = document.createElement('div');
+            
             div.className = "p-3 border border-gray-300 dark:border-gray-600 rounded hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center transition";
             div.innerHTML = `
                 <div>
                     <p class="font-bold dark:text-gray-200">${record.equipment_name}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">${record.plant_name || 'No Plant'} | ${record.report_date}</p>
-                </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        ${record.plant_name || 'No Plant'} | ${record.report_date} | <span class="font-semibold text-gray-700 dark:text-gray-300">${rpmDisplay}</span></p>
+                    </div>
                 <span class="text-blue-600 dark:text-blue-400 text-sm font-medium">Load</span>
             `;
             div.onclick = () => {
