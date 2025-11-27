@@ -2398,8 +2398,8 @@ supabase.auth.onAuthStateChange((event, session) => {
                 `;
             }
             // *** NEW: Add Final Run headers ***
-            dataTableHtml += `<th>Residual Amp</th>
-            <th>Residual Phase</th>`;
+            dataTableHtml += `<th>Resi. Amp</th>
+            <th>Resi. Phase</th>`;
             
             if (isTrim) {
                 dataTableHtml += `<th>Post-Trim Amp</th><th>Post-Trim Phase</th>`;
@@ -2466,7 +2466,41 @@ supabase.auth.onAuthStateChange((event, session) => {
 
                 dataTableHtml += `</tr>`;
             }
+            // 1. Calculate how many columns we have so we can span the entire width
+            let totalCols = 3; // Location + Int. Amp + Int. Phase
+            if (isStandardMode) {
+                totalCols += 4; // Tri. Amp + Tri. Phase + IC Mag + IC Angle
+            } else {
+                totalCols += 2; // Kn. IC Mag + Kn. IC Angle
+            }
+            totalCols += 2; // Residual Amp + Residual Phase
+            if (isTrim) {
+                totalCols += 2; // Post-Trim Amp + Post-Trim Phase
+            }
 
+            // 2. Build the abbreviation text string based on active mode
+            let abbrevParts = [];
+            abbrevParts.push("<strong>Int.</strong> = Initial");
+            
+            if (isStandardMode) {
+                abbrevParts.push("<strong>Tri.</strong> = Trial");
+                abbrevParts.push("<strong>IC</strong> = Influence Coefficient");
+            } else {
+                abbrevParts.push("<strong>Kn. IC</strong> = Known Influence Coefficient");
+            }
+              abbrevParts.push("<strong>Resi.</strong> = Residual");
+              
+            const abbrevString = abbrevParts.join("; ");
+
+            // 3. Append the footer row
+            dataTableHtml += `
+                <tr style="background-color: #f8f9fa; border-top: 2px solid #e5e7eb;">
+                    <td colspan="${totalCols}" style="padding: 6px; font-size: 8pt; color: #666; font-style: italic;">
+                        <span style="font-weight:600; color:#444;">Note:</span> ${abbrevString}
+                    </td>
+                </tr>
+            `;
+            
             dataTableHtml += '</tbody></table>';
             return dataTableHtml;
         }
@@ -2597,7 +2631,7 @@ supabase.auth.onAuthStateChange((event, session) => {
                         .results-group { margin-top: 10px; padding: 8px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px; }
                         .results-group p { margin: 3px 0; }
                         .plot-container { text-align: center; margin-top: 15px; page-break-inside: avoid; }
-                        .plot-container img { max-width: 50%; max-height: 380px; width: auto; height: auto; border: 1px solid #ccc; }
+                        .plot-container img { max-width: 45%; max-height: 300px; width: auto; height: auto; border: 1px solid #ccc; }
                         .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px; font-size: 8pt; text-align: left; padding: 5px; border: 1px solid #eee; }
                     </style>
                 </head>
@@ -2734,7 +2768,7 @@ supabase.auth.onAuthStateChange((event, session) => {
             
             const contentHtml = `
                 <div class="container">
-                    <h1>Balancing Report</h1>
+                    <h1>Dynamic Balancing Report</h1>
                     
                     <h2>Job Details</h2>
                     <table style="border: none;">
