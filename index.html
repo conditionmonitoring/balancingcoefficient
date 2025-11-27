@@ -123,7 +123,7 @@
     <div id="authOverlay" class="fixed inset-0 z-[100] bg-gray-900/80 flex items-center justify-center">
         <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
             <div class="text-center mb-6">
-                <img src="https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png" alt="Logo" class="h-12 mx-auto mb-4">
+                <img src="https://lgyladuiyezqccyjxqgn.supabase.co/storage/v1/object/public/Image/cbmlogo.png" alt="Logo" class="h-12 mx-auto mb-4">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Welcome Back</h2>
                 <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">Single Plane Balancing Calculator</p>
             </div>
@@ -184,7 +184,7 @@
         </button>
 
         <header class="mb-8 flex justify-between items-center flex-wrap">
-            <img src="https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png" alt="Left Logo" class="h-8 md:h-10" onerror="this.onerror=null; this.src='https://placehold.co/120x40/cccccc/333333?text=Logo+Error';">
+            <img src="https://lgyladuiyezqccyjxqgn.supabase.co/storage/v1/object/public/Image/cbmlogo.png" alt="Left Logo" class="h-8 md:h-10" onerror="this.onerror=null; this.src='https://placehold.co/120x40/cccccc/333333?text=Logo+Error';">
             
             <div class="text-center flex-grow">
                 <h1 class="text-2xl md:text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">Enhanced Single Plane Balancing</h1>
@@ -267,7 +267,24 @@
                         <img id="rotorTypeImage" src="" alt="Rotor Type Image" class="hidden mt-2 h-20 md:h-24 w-auto object-contain"> 
                     </div>
                 </div>
+                  <div class="input-group">
+                    <label for="assetId" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-fingerprint"></i> Asset ID:</label>
+                    <input type="text" id="assetId" placeholder="e.g., A-1234" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
+                </div>
+                    <div class="input-group">
+                    <label for="previousWeight" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-history"></i> Previous Weight:</label>
+                    <input type="text" id="previousWeight" placeholder="e.g., 10g @ 45&deg;" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
+                </div>
             </div>
+        </div>
+        
+        <div class="mb-4 mt-4">
+            <label for="analystRemarks" class="block font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fas fa-edit"></i> Analyst Observations / Remarks:
+            </label>
+            <textarea id="analystRemarks" rows="3" 
+                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter your observations, root cause findings, or recommendations here..."></textarea>
         </div>
 
         <div class="mb-4">
@@ -642,7 +659,12 @@
                 ratedPower: ratedPowerInput.value,
                 rotorRPM: rotorRPMInput.value,
                 rotorType: rotorTypeSelect.value,
+                // --- NEW FIELDS ---
+                assetId: getInputValue('assetId', ''),
+                previousWeight: getInputValue('previousWeight', '')
             },
+            // ADD THIS NEW FIELD AT THE ROOT LEVEL (or inside details if you prefer)
+            remarks: getInputValue('analystRemarks', ''),
             suggestion: { rotorWeight: rotorWeightInput.value, trialRadius: trialRadiusInput.value },
             globalState: {
                 lastCalculationMode: lastCalculationMode,
@@ -1007,6 +1029,13 @@ supabase.auth.onAuthStateChange((event, session) => {
                 rotorRPMInput.value = loadedData.details.rotorRPM || '';
                 rotorTypeSelect.value = loadedData.details.rotorType || '';
                 rotorTypeSelect.dispatchEvent(new Event('change'));
+                
+                // --- NEW FIELDS ---
+                document.getElementById('assetId').value = loadedData.details.assetId || '';
+                document.getElementById('previousWeight').value = loadedData.details.previousWeight || '';
+                
+                // Check both root level (new saves) and details level (optional fallback)
+                document.getElementById('analystRemarks').value = loadedData.remarks || '';
 
                 if (loadedData.details.rotationDirection === "CW") {
                     rotDirCWButton.click();
@@ -1301,6 +1330,10 @@ supabase.auth.onAuthStateChange((event, session) => {
                     finalAmp: null, finalAngle: null,
                     trimFinalAmp: null, trimFinalAngle: null,
                     lastOriginalForPlot: null, 
+                    initialCorrectionMass: null, // NEW
+                    initialCorrectionAngle: null, // NEW
+                    trimCorrectionMass: null,    // NEW
+                    trimCorrectionAngle: null,
                 };
             });
             
@@ -1311,6 +1344,11 @@ supabase.auth.onAuthStateChange((event, session) => {
             rotorTypeSelect.value = '';
             rotorTypeImage.classList.add('hidden');
             rotorTypeImage.src = '';
+            // --- NEW FIELDS ---
+            document.getElementById('assetId').value = '';
+            document.getElementById('previousWeight').value = '';
+            // --- NEW: Clear Remarks ---
+            document.getElementById('analystRemarks').value = '';
 
             if (rotationDirectionInput.value === "CW") { 
                  rotDirCWButton.click(); 
@@ -1489,6 +1527,9 @@ supabase.auth.onAuthStateChange((event, session) => {
 
         rotorTypeSelect.addEventListener('change', (e) => {
             const selectedType = e.target.value;
+           // --- DISABLE IMAGE POPUP ---
+            // Commenting out logic to stop image from showing
+            /*
             if (selectedType && rotorTypeImageSources[selectedType]) {
                 rotorTypeImage.src = rotorTypeImageSources[selectedType];
                 rotorTypeImage.alt = selectedType + " Rotor Image";
@@ -1498,6 +1539,7 @@ supabase.auth.onAuthStateChange((event, session) => {
                 rotorTypeImage.src = '';
                 rotorTypeImage.alt = 'Rotor Type Image';
             }
+            */
         });
 
         measurementLocationSelect.addEventListener('change', (e) => {
@@ -1663,6 +1705,8 @@ supabase.auth.onAuthStateChange((event, session) => {
             balancingData[plotLocation].correctionAngle = corrAngle;
             balancingData[plotLocation].removalMass = removeMass;
             balancingData[plotLocation].removalAngle = removeAngle;
+            balancingData[plotLocation].initialCorrectionMass = corrMass;
+            balancingData[plotLocation].initialCorrectionAngle = corrAngle;
 
             const addLabel = (correctionStrategy === 'keep') ? "Add Weight:" : "Total Correction (Wc):";
             const removeLabel = (correctionStrategy === 'keep') ? "OR Remove:" : "OR Remove Total:";
@@ -1761,6 +1805,8 @@ supabase.auth.onAuthStateChange((event, session) => {
             balancingData[plotLocation].correctionAngle = corrAngle;
             balancingData[plotLocation].removalMass = removeMass;
             balancingData[plotLocation].removalAngle = removeAngle;
+            balancingData[plotLocation].initialCorrectionMass = corrMass;
+            balancingData[plotLocation].initialCorrectionAngle = corrAngle;
 
             correctionWeightLabel.textContent = "Correction Weight (Wc):";
             document.getElementById('removalWeightLabel').textContent = "OR Remove Weight:";
@@ -1845,6 +1891,14 @@ supabase.auth.onAuthStateChange((event, session) => {
             document.getElementById('trimMassResult').textContent = W_trim.magnitude.toFixed(3);
             document.getElementById('trimAngleResult').textContent = W_trim.angleDeg.toFixed(1);
             trimResultsDiv.classList.remove('hidden');
+            
+            const plotLocation = measurementLocationSelect.value; // Define variable first!
+            
+            // Save the separate Trim Weight
+            balancingData[plotLocation].trimCorrectionMass = W_trim.magnitude;
+            balancingData[plotLocation].trimCorrectionAngle = W_trim.angleDeg;
+            balancingData[plotLocation].isTrimMerged = false; // New Flag
+            // ---------------------------------
 
             const trimSoloDiv = document.getElementById('trimSoloResult');
             const trimMergedDiv = document.getElementById('trimMergedResult');
@@ -1864,8 +1918,16 @@ supabase.auth.onAuthStateChange((event, session) => {
                     trimMergedDiv.classList.remove('hidden');
                     
                     const plotLoc = measurementLocationSelect.value; 
+                    // Main Correction Mass (Action Taken uses this)
                     balancingData[plotLoc].correctionMass = W_total.magnitude;
                     balancingData[plotLoc].correctionAngle = W_total.angleDeg;
+                    
+                    // --- FIX FOR ISSUE 2: Update Trim Storage to Total if Merged ---
+                    balancingData[plotLoc].trimCorrectionMass = W_total.magnitude;
+                    balancingData[plotLoc].trimCorrectionAngle = W_total.angleDeg;
+                    balancingData[plotLoc].isTrimMerged = true; // Set Flag
+                    // ---------------------------------------------------------------
+                    
                     const W_remove = W_total.negate();
                     balancingData[plotLoc].removalMass = W_remove.magnitude;
                     balancingData[plotLoc].removalAngle = W_remove.angleDeg;
@@ -1882,7 +1944,11 @@ supabase.auth.onAuthStateChange((event, session) => {
                 balancingData[plotLoc].removalAngle = W_remove.angleDeg;
             }
 
-            lastCalculationMode = 'Trim Balance (Multi-Point)';
+            //lastCalculationMode = 'Trim Balance (Multi-Point)';
+            if (!lastCalculationMode.includes('+Trim')) {
+              lastCalculationMode += '+Trim';
+              }
+              
             lastProcessedLocations = locsToProcess;
 
             plotLocationLabelSpan.textContent = measurementLocationSelect.value;
@@ -2306,6 +2372,7 @@ supabase.auth.onAuthStateChange((event, session) => {
             }
 
             const isStandardMode = lastCalculationMode.includes('Standard');
+            const isTrim = lastCalculationMode.includes('Trim');
 
             // Build Header
             dataTableHtml = `
@@ -2313,26 +2380,31 @@ supabase.auth.onAuthStateChange((event, session) => {
                     <thead>
                         <tr>
                             <th>Location</th>
-                            <th>O Amp</th>
-                            <th>O Phase</th>
+                            <th>Int. Amp</th>
+                            <th>Int. Phase</th>
             `;
             if (isStandardMode) {
                 dataTableHtml += `
-                            <th>O+T Amp</th>
-                            <th>O+T Phase</th>
+                            <th>Tri. Amp</th>
+                            <th>Tri. Phase</th>
                             <th>IC Mag</th>
                             <th>IC Angle</th>
                 `;
             } else {
                 dataTableHtml += `
-                            <th>Known IC Mag</th>
-                            <th>Known IC Angle</th>
+                            <th>Kn. IC Mag</th>
+                            <th>Kn. IC Angle</th>
                 `;
             }
             // *** NEW: Add Final Run headers ***
+            dataTableHtml += `<th>Residual Amp</th>
+            <th>Residual Phase</th>`;
+            
+            if (isTrim) {
+                dataTableHtml += `<th>Post-Trim Amp</th><th>Post-Trim Phase</th>`;
+            }
+            
             dataTableHtml += `
-                            <th>Final Amp</th>
-                            <th>Final Phase</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -2372,13 +2444,26 @@ supabase.auth.onAuthStateChange((event, session) => {
                 }
                 
                 // *** NEW: Add Final Run data ***
-                const f_amp = data.finalAmp !== null ? data.finalAmp.toFixed(3) : '---';
-                const f_ang = data.finalAngle !== null ? data.finalAngle.toFixed(1) : '---';
+                const preTrimAmp = data.finalAmp !== null ? data.finalAmp.toFixed(3) : '---';
+                const preTrimAng = data.finalAngle !== null ? data.finalAngle.toFixed(1) : '---';
+                
                 dataTableHtml += `
-                        <td>${f_amp}</td>
-                        <td>${f_ang}</td>
-                    </tr>
+                        <td>${preTrimAmp}</td>
+                        <td>${preTrimAng}</td>
                 `;
+
+                // Add Post-Trim columns if Trim mode is active
+                if (isTrim) {
+                    const postTrimAmp = data.trimFinalAmp !== null ? data.trimFinalAmp.toFixed(3) : '---';
+                    const postTrimAng = data.trimFinalAngle !== null ? data.trimFinalAngle.toFixed(1) : '---';
+                    
+                    dataTableHtml += `
+                        <td>${postTrimAmp}</td>
+                        <td>${postTrimAng}</td>
+                    `;
+                }
+
+                dataTableHtml += `</tr>`;
             }
 
             dataTableHtml += '</tbody></table>';
@@ -2399,7 +2484,10 @@ supabase.auth.onAuthStateChange((event, session) => {
             const power = getInputValue('ratedPower', 'N/A');
             const rpm = getInputValue('rotorRPM', 'N/A');
             const rotorType = getInputValue('rotorTypeSelect', 'N/A');
-            const logoUrl = "https://raw.githubusercontent.com/conditionmonitoring/balancingcoefficient/refs/heads/main/cbmlogo.png";
+            const logoUrl = "https://lgyladuiyezqccyjxqgn.supabase.co/storage/v1/object/public/Image/cbmlogo.png";
+            const assetId = getInputValue('assetId', 'N/A');
+            const prevWt = getInputValue('previousWeight', 'N/A');
+            const remarks = getInputValue('analystRemarks', 'None');
             
             const plotLocation = measurementLocationSelect.value;
             const data = balancingData[plotLocation];
@@ -2416,11 +2504,46 @@ supabase.auth.onAuthStateChange((event, session) => {
             const removeMass = (data.removalMass !== null) ? data.removalMass.toFixed(3) : '---';
             const removeAngle = (data.removalAngle !== null) ? data.removalAngle.toFixed(1) : '---';
             
+            // --- UPDATED ACTION TAKEN LOGIC (Fixing Issue 1) ---
             let finalActionHTML = '';
-            if (lastBalancingAction === 'add') {
-                finalActionHTML = `<p><strong>Action Taken:</strong> Weight Addition (${addMass} g @ ${addAngle}&deg;)</p>`;
-            } else {
-                finalActionHTML = `<p><strong>Action Taken:</strong> Weight Removal (${removeMass} g @ ${removeAngle}&deg;)</p>`;
+            const isTrim = lastCalculationMode.includes('Trim');
+            const isMerged = data.isTrimMerged === true;
+
+            // Scenario A: Trim Mode WITHOUT Merge -> Show Both Weights
+            if (isTrim && !isMerged && data.initialCorrectionMass !== null && data.trimCorrectionMass !== null) {
+                const initM = data.initialCorrectionMass.toFixed(3);
+                const initA = data.initialCorrectionAngle.toFixed(1);
+                const trimM = data.trimCorrectionMass.toFixed(3);
+                const trimA = data.trimCorrectionAngle.toFixed(1);
+                
+                finalActionHTML = `<p><strong>Action Taken:</strong> Weight Addition 1 (${initM} g @ ${initA}&deg;) AND Weight Addition 2 (${trimM} g @ ${trimA}&deg;)</p>`;
+            } 
+            // Scenario B: Standard or Merged Trim -> Show Final Result
+            else {
+                if (lastBalancingAction === 'add') {
+                    finalActionHTML = `<p><strong>Action Taken:</strong> Weight Addition (${addMass} g @ ${addAngle}&deg;)</p>`;
+                } else {
+                    finalActionHTML = `<p><strong>Action Taken:</strong> Weight Removal (${removeMass} g @ ${removeAngle}&deg;)</p>`;
+                }
+            }
+
+            // --- UPDATED SUMMARY LOGIC (Fixing Issue 2) ---
+            let summaryHtml = `<p><strong>Mode:</strong> ${lastCalculationMode}</p>`;
+
+            // 1. Trial Weight
+            if (lastCalculationMode.includes('Standard')) {
+                summaryHtml += `<p><strong>Trial Weight:</strong> ${twMass} g @ ${twAngle}&deg;</p>`;
+            }
+
+            // 2. Initial Correction Weight
+            if (data.initialCorrectionMass !== null && data.initialCorrectionMass !== undefined) {
+                 summaryHtml += `<p><strong>Initial Correction Weight:</strong> ${data.initialCorrectionMass.toFixed(3)} g @ ${data.initialCorrectionAngle.toFixed(1)}&deg;</p>`;
+            }
+
+            // 3. Trim Correction Weight
+            if (isTrim && data.trimCorrectionMass !== null && data.trimCorrectionMass !== undefined) {
+                let mergeText = isMerged ? " (Merge with previous)" : "";
+                summaryHtml += `<p><strong>Trim Correction Weight:</strong> ${data.trimCorrectionMass.toFixed(3)} g @ ${data.trimCorrectionAngle.toFixed(1)}&deg;${mergeText}</p>`;
             }
             
             const dataTableHtml = buildReportDataTable();
@@ -2473,7 +2596,7 @@ supabase.auth.onAuthStateChange((event, session) => {
                         .results-group { margin-top: 10px; padding: 8px; background-color: #f9f9f9; border: 1px solid #eee; border-radius: 4px; }
                         .results-group p { margin: 3px 0; }
                         .plot-container { text-align: center; margin-top: 15px; page-break-inside: avoid; }
-                        .plot-container img { max-width: 70%; height: auto; border: 1px solid #ccc; }
+                        .plot-container img { max-width: 50%; max-height: 380px; width: auto; height: auto; border: 1px solid #ccc; }
                         .legend-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 5px; font-size: 8pt; text-align: left; padding: 5px; border: 1px solid #eee; }
                     </style>
                 </head>
@@ -2481,19 +2604,21 @@ supabase.auth.onAuthStateChange((event, session) => {
                     <div class="container">
                         <div class="header">
                             <img src="${logoUrl}" alt="Logo">
-                            <h1>Balancing Report</h1>
+                            <h1>Dynamic Balancing Report</h1>
                         </div>
                         
                         <h2>Job Details</h2>
                         <div class="details-grid">
                             <p><strong><i class="fas fa-fan"></i> Equipment:</strong> ${eqName}</p>
                             <p><strong><i class="fas fa-industry"></i> Plant:</strong> ${plant}</p>
+                            <p><strong><i class="fas fa-fingerprint"></i> Asset ID:</strong> ${assetId}</p>
                             <p><strong><i class="far fa-calendar-alt"></i> Date:</strong> ${date}</p>
                             <p><strong><i class="fas fa-tachometer-alt"></i> Rotor RPM:</strong> ${rpm}</p>
                             <p><strong><i class="fas fa-bolt"></i> Rated Power:</strong> ${power}</p>
                             <p><strong><i class="fas fa-certificate"></i> Number of Vanes:</strong> ${vanes}</p>
                             <p><strong><i class="fas fa-shapes"></i> Rotor Type:</strong> ${rotorType}</p>
                             <p><strong><i class="fas fa-sync-alt mr-2"></i> Rotation:</strong> ${rotDir}</p>
+                            <p><strong><i class="fas fa-history"></i> Prev. Weight:</strong> ${prevWt}</p>
                         </div>
 
                         <h2>Data Used</h2>
@@ -2502,9 +2627,7 @@ supabase.auth.onAuthStateChange((event, session) => {
                         ${(hasStdResults || lastCalculationMode.includes('Trim')) ? `
                         <h2>Summary</h2>
                         <div class="results-group">
-                            <p><strong>Mode:</strong> ${lastCalculationMode}</p>
-                            ${isStandardMode ? `<p><strong>Trial Weight:</strong> ${twMass} g @ ${twAngle}&deg;</p>` : ''}
-                            ${finalActionHTML}
+                            ${summaryHtml}      ${finalActionHTML}
                         </div>
                         ` : ''}
 
@@ -2513,6 +2636,10 @@ supabase.auth.onAuthStateChange((event, session) => {
                             <img src="${plotImage}" alt="Polar Plot">
                             ${legendHtml}
                         </div>
+                        <h2>Observations & Remarks</h2>
+                    <div class="results-group" style="min-height: 40px; white-space: pre-wrap;">
+                        ${remarks}
+                    </div>
                     </div>
                 </body>
                 </html>
