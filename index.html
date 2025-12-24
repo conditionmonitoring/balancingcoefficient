@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en"> 
 <head>
@@ -676,7 +677,7 @@
             balancingData: balancingData
         };
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('balancing_records')
             .insert([
                 { 
@@ -698,7 +699,7 @@
         const eqName = equipmentNameInput.value;
         const plName = plantNameInput.value;
         
-        let query = supabase.from('balancing_records').select('id, report_date, equipment_name, plant_name, full_data').order('report_date', { ascending: false });
+        let query = supabaseClient.from('balancing_records').select('id, report_date, equipment_name, plant_name, full_data').order('report_date', { ascending: false });
 
         if (eqName) { query = query.ilike('equipment_name', `%${eqName}%`); }
         if (plName) { query = query.ilike('plant_name', `%${plName}%`); }
@@ -798,7 +799,7 @@ document.getElementById('btnClearReadingsKnownIC').addEventListener('click', () 
         // ... (Supabase) ...
         const supabaseUrl = 'https://lgyladuiyezqccyjxqgn.supabase.co'; // <--- YOUR URL
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxneWxhZHVpeWV6cWNjeWp4cWduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NDEyMTksImV4cCI6MjA3ODUxNzIxOX0.O-K3aJkcdvnj0k3ltu37AK3hrW2ibZCZbwVy9SDTBZg'; // <--- YOUR KEY
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         // ... (Existing DOM Elements) ...
         const authOverlay = document.getElementById('authOverlay');
@@ -908,50 +909,65 @@ document.getElementById('btnClearReadingsKnownIC').addEventListener('click', () 
             authMessage.classList.add('hidden');
         });
 
-        // Sign In
-        btnLogin.addEventListener('click', async () => {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-            authMessage.classList.add('hidden');
-            
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+        // --- FIXED LOGIN WITH NEW NAME ---
+btnLogin.addEventListener('click', async () => {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    
+    authMessage.textContent = "Logging in...";
+    authMessage.classList.remove('hidden');
 
-            if (error) {
-                authMessage.textContent = error.message;
-                authMessage.classList.remove('hidden');
-            } else {
-                // Auth state listener will handle UI change
-            }
+    try {
+        // ERROR WAS HERE -> We now use 'supabaseClient'
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password,
         });
 
-        // Sign Up
-        btnSignup.addEventListener('click', async () => {
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
-            authMessage.classList.add('hidden');
+        if (error) throw error;
+        
+        // Success!
+        authMessage.textContent = "Success!";
+        authMessage.classList.add('text-green-500');
 
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-            });
+    } catch (err) {
+        authMessage.textContent = "Error: " + err.message;
+        authMessage.classList.add('text-red-500');
+    }
+});
 
-            if (error) {
-                authMessage.textContent = error.message;
-                authMessage.classList.remove('hidden');
-            } else {
-                authMessage.textContent = "Registration successful! Please check your email to verify, or try logging in.";
-                authMessage.classList.remove('text-red-500');
-                authMessage.classList.add('text-green-500');
-                authMessage.classList.remove('hidden');
-            }
+// --- FIXED SIGN UP ---
+btnSignup.addEventListener('click', async () => {
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+
+    authMessage.textContent = "Creating account...";
+    authMessage.classList.remove('hidden', 'text-green-500', 'text-red-500');
+    authMessage.classList.add('text-blue-500');
+
+    try {
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
         });
+
+        if (error) {
+            throw error;
+        }
+
+        authMessage.textContent = "Registration successful! Please check your email.";
+        authMessage.classList.replace('text-blue-500', 'text-green-500');
+
+    } catch (err) {
+        authMessage.textContent = "Signup Error: " + (err.message || err.toString());
+        authMessage.classList.replace('text-blue-500', 'text-red-500');
+        authMessage.classList.remove('hidden');
+    }
+});
 
         // Logout
         btnLogout.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signOut();
+            const { error } = await supabaseClient.auth.signOut();
             if (error) console.error('Error logging out:', error);
             window.location.reload();
         });
@@ -968,7 +984,7 @@ const ADMIN_EMAILS = [
     'abhishek.karn@tatasteel.com'
 ];
 
-supabase.auth.onAuthStateChange((event, session) => {
+supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session) {
         currentUser = session.user;
         authOverlay.classList.add('hidden');
