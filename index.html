@@ -1,4 +1,6 @@
 
+
+
 <!DOCTYPE html>
 <html lang="en"> 
 <head>
@@ -13,78 +15,226 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script> tailwind.config = { darkMode: 'class' }; </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        /* ============================================================
+           iOS-STYLE GLASSMORPHIC DESIGN SYSTEM
+           Palette: iOS system accents on a frosted, translucent surface
+           language. Every "card" in the app is a pane of glass sitting
+           over an ambient aurora gradient — the gradient is the one
+           constant; opacity/blur is what separates day from night.
+           ============================================================ */
+        :root {
+            --ios-blue: #0A84FF;
+            --ios-blue-dim: #0060DF;
+            --ios-green: #30D158;
+            --ios-orange: #FF9F0A;
+            --ios-red: #FF453A;
+            --ios-purple: #BF5AF2;
+            --ios-indigo: #5E5CE6;
+            --ios-teal: #64D2FF;
+            --ios-pink: #FF375F;
+            --glass-bg: rgba(255,255,255,0.58);
+            --glass-border: rgba(255,255,255,0.65);
+            --glass-shadow: 0 8px 32px rgba(31,41,55,0.10), 0 1px 0 rgba(255,255,255,0.4) inset;
+            --glass-blur: blur(24px) saturate(180%);
+        }
+        .dark {
+            --glass-bg: rgba(20,23,35,0.55);
+            --glass-border: rgba(255,255,255,0.09);
+            --glass-shadow: 0 8px 32px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.04) inset;
+        }
+
+        html, body { height: 100%; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background: radial-gradient(circle at 15% 8%, #DCE9FF 0%, transparent 45%),
+                        radial-gradient(circle at 85% 15%, #E7DBFF 0%, transparent 42%),
+                        radial-gradient(circle at 50% 90%, #DFF4FF 0%, transparent 50%),
+                        linear-gradient(180deg, #EEF3FC 0%, #E7ECF6 100%);
+            background-attachment: fixed;
+            transition: background 0.4s ease;
+        }
+        .dark body, .dark {
+            background: radial-gradient(circle at 15% 8%, #14204a 0%, transparent 45%),
+                        radial-gradient(circle at 85% 12%, #2a1a4d 0%, transparent 45%),
+                        radial-gradient(circle at 50% 95%, #0d2b3a 0%, transparent 50%),
+                        linear-gradient(180deg, #060912 0%, #0B1020 100%);
+            background-attachment: fixed;
+        }
+
+        h1, h2, h3 { letter-spacing: -0.01em; }
+
+        /* Generic glass surface, used on the main shell + auth card */
+        .glass-shell {
+            background: var(--glass-bg);
+            -webkit-backdrop-filter: var(--glass-blur);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
         .input-group { margin-bottom: 1rem; }
-        .input-group label, .radio-group label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
-        .input-group input, .input-group select { width: 100%; padding: 0.5rem; border-radius: 0.375rem; border: 1px solid #D1D5DB; background-color: #F9FAFB; }
-        
-        /* Dark mode inputs */
-        .dark .input-group input, .dark .input-group select { background-color: #374151; border-color: #4B5563; color: #F3F4F6; }
-        .dark .input-group input::placeholder, .dark .input-group select::placeholder { color: #9CA3AF; }
+        .input-group label, .radio-group label { display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.85rem; color: #4B5563; }
+        .dark .input-group label, .dark .radio-group label { color: #A5B4CB; }
+        .input-group input, .input-group select, .table-input {
+            width: 100%; padding: 0.55rem 0.7rem; border-radius: 0.7rem;
+            border: 1px solid rgba(15,23,42,0.10);
+            background-color: rgba(255,255,255,0.6);
+            -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+            color: #1F2937;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+        }
+        .input-group input:focus, .input-group select:focus, .table-input:focus {
+            outline: none; border-color: var(--ios-blue);
+            box-shadow: 0 0 0 3px rgba(10,132,255,0.22);
+            background-color: rgba(255,255,255,0.85);
+        }
+        .dark .input-group input, .dark .input-group select, .dark .table-input {
+            background-color: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.10); color: #E5E7EB;
+        }
+        .dark .input-group input:focus, .dark .input-group select:focus, .dark .table-input:focus {
+            background-color: rgba(255,255,255,0.09); box-shadow: 0 0 0 3px rgba(10,132,255,0.35);
+        }
+        .input-group input::placeholder, .table-input::placeholder { color: #9CA3AF; }
 
-        .table-input { width: 100%; padding: 0.4rem; border-radius: 0.25rem; border: 1px solid #D1D5DB; font-size: 0.875rem; background-color: #F9FAFB; }
-        .table-input:focus { border-color: #3B82F6; ring: 1px; ring-color: #3B82F6; }
-        .dark .table-input { background-color: #374151; border-color: #4B5563; color: #F3F4F6; }
-        
-        .table-output { font-family: 'Inter', sans-serif; font-size: 0.875rem; color: #1E40AF; }
-        .dark .table-output { color: #93C5FD; }
+        .table-input { padding: 0.4rem 0.5rem; border-radius: 0.5rem; font-size: 0.875rem; }
+        .table-output { font-family: 'Inter', sans-serif; font-size: 0.875rem; font-weight: 700; color: var(--ios-blue-dim); }
+        .dark .table-output { color: #7DB8FF; }
 
-        #polarPlotContainer { position: relative; width: 100%; max-width: 600px; margin: 0 auto; }
-        #rotationDirectionArrow { position: absolute; top: 10px; left: 10px; font-size: 0.9rem; font-weight: bold; color: #3B82F6; background-color: rgba(255,255,255,0.8); padding: 2px 6px; border-radius: 4px; z-index: 10; pointer-events: none; }
-        .dark #rotationDirectionArrow { background-color: rgba(31, 41, 55, 0.8); color: #60A5FA; }
+        /* --- Hardened table theming ---------------------------------------------------
+           Tailwind's CDN build re-generates and re-appends its stylesheet whenever new
+           classes appear in the DOM (e.g. table rows/cards rendered by JS after load),
+           which can push utility rules like bg-white / bg-gray-50 / bg-gray-100 later in
+           the cascade than this block and let them win ties. These !important rules make
+           every table, table-input, and the remarks textarea always follow the glass
+           design system regardless of that timing, in both day and night mode. */
+        .tab-content table thead,
+        .details-section table thead { background-color: rgba(120,130,150,0.12) !important; }
+        .dark .tab-content table thead,
+        .dark .details-section table thead { background-color: rgba(255,255,255,0.06) !important; }
+        .tab-content table tbody,
+        .details-section table tbody { background-color: rgba(255,255,255,0.30) !important; }
+        .dark .tab-content table tbody,
+        .dark .details-section table tbody { background-color: rgba(255,255,255,0.02) !important; }
+        .tab-content table tbody tr,
+        .tab-content table thead tr { border-color: rgba(15,23,42,0.08) !important; }
+        .dark .tab-content table tbody tr,
+        .dark .tab-content table thead tr { border-color: rgba(255,255,255,0.08) !important; }
+        .table-input, .input-group input, .input-group select {
+            background-color: rgba(255,255,255,0.6) !important;
+            border-color: rgba(15,23,42,0.10) !important;
+            color: #1F2937 !important;
+        }
+        .dark .table-input, .dark .input-group input, .dark .input-group select {
+            background-color: rgba(255,255,255,0.05) !important;
+            border-color: rgba(255,255,255,0.10) !important;
+            color: #E5E7EB !important;
+        }
+        /* Mirrored/read-back IC cells (Trim tab) — indicate via accent border, not a gray fill */
+        #trimBalancingTableBody .table-input[id*="_ic_mag_"],
+        #trimBalancingTableBody .table-input[id*="_ic_ang_"] { border-left: 3px solid var(--ios-indigo) !important; }
+
+        #analystRemarks {
+            background-color: rgba(255,255,255,0.6) !important;
+            border: 1px solid rgba(15,23,42,0.10) !important;
+            color: #1F2937 !important;
+            border-radius: 0.9rem !important;
+        }
+        .dark #analystRemarks {
+            background-color: rgba(255,255,255,0.05) !important;
+            border-color: rgba(255,255,255,0.10) !important;
+            color: #E5E7EB !important;
+        }
+        #analystRemarks:focus { outline: none; border-color: var(--ios-blue) !important; box-shadow: 0 0 0 3px rgba(10,132,255,0.22); }
+
+        #polarPlotContainer { position: relative; width: 100%; max-width: 600px; margin: 0 auto; padding: 14px; border-radius: 1.5rem; }
+        #polarPlotContainer::before {
+            content: ''; position: absolute; inset: 0; border-radius: 1.5rem; z-index: -1;
+            background: radial-gradient(circle at 50% 40%, rgba(10,132,255,0.10), transparent 70%);
+        }
+        #rotationDirectionArrow { position: absolute; top: 20px; left: 20px; font-size: 0.85rem; font-weight: 700; color: var(--ios-blue); background-color: rgba(255,255,255,0.75); backdrop-filter: blur(6px); padding: 3px 10px; border-radius: 9999px; z-index: 10; pointer-events: none; }
+        .dark #rotationDirectionArrow { background-color: rgba(20,23,35,0.75); color: #7DB8FF; }
 
         /* Tooltip Styles */
         #polarPlotTooltip {
             position: absolute;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(20,23,35,0.85);
+            -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
             color: white;
-            padding: 6px 10px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-size: 0.85rem;
             pointer-events: none;
             z-index: 20;
             display: none;
             white-space: nowrap;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.12);
         }
         .legend-value {
-            font-family: 'Courier New', monospace; 
+            font-family: 'SF Mono', 'Courier New', monospace; 
             font-weight: 700;
             margin-left: 5px;
         }
 
-        #polarPlotCanvas { border: 1px solid #93c5fd; border-radius: 0.375rem; width: 100%; height: auto; display: block; cursor: crosshair; }
-        .dark #polarPlotCanvas { border-color: #2563EB; }
+        #polarPlotCanvas { border-radius: 50%; width: 100%; height: auto; display: block; cursor: crosshair; background: rgba(255,255,255,0.35); box-shadow: inset 0 0 0 1px rgba(10,132,255,0.25), 0 12px 28px rgba(31,41,55,0.10); }
+        .dark #polarPlotCanvas { background: rgba(255,255,255,0.02); box-shadow: inset 0 0 0 1px rgba(125,184,255,0.25), 0 12px 28px rgba(0,0,0,0.4); }
         
-        .legend-color-box { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+        .legend-color-box { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; border-radius: 4px; }
         .legend-dot { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: middle; border-radius: 50%; }
         
-        .tab-button { padding: 0.5rem 1rem; margin-right: 0.5rem; margin-bottom: -1px; border-radius: 0.375rem 0.375rem 0 0; border: 1px solid #D1D5DB; border-bottom: none; background-color: #E5E7EB; cursor: pointer; font-weight: 500; }
-        .dark .tab-button { border-color: #374151; background-color: #374151; color: #D1D5DB; }
+        /* --- iOS Segmented-Control Tab Bar --- */
+        #tabBarWrap {
+            display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 1rem;
+            background: rgba(120,130,150,0.14);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+        }
+        .dark #tabBarWrap { background: rgba(255,255,255,0.06); }
+        .tab-button {
+            padding: 0.5rem 1rem; border-radius: 0.7rem; border: none;
+            background-color: transparent; color: #52627A; cursor: pointer;
+            font-weight: 600; font-size: 0.85rem; transition: all 0.2s ease;
+        }
+        .dark .tab-button { color: #9AAAC4; }
+        .tab-button:hover { color: var(--ios-blue); }
+        .tab-button.active { background-color: rgba(255,255,255,0.9); color: var(--ios-blue-dim); box-shadow: 0 2px 8px rgba(31,41,55,0.14); }
+        .dark .tab-button.active { background-color: rgba(255,255,255,0.10); color: #7DB8FF; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         
-        .tab-button.active { background-color: white; border-bottom: 1px solid white; color: #3B82F6; }
-        .dark .tab-button.active { background-color: #1F2937; border-bottom-color: #1F2937; color: #60A5FA; }
-        
-        .tab-content { border: 1px solid #D1D5DB; padding: 1.5rem; border-radius: 0 0.375rem 0.375rem 0.375rem; background-color: white; }
-        .dark .tab-content { border-color: #374151; background-color: #1F2937; }
+        .tab-content {
+            padding: 1.75rem; border-radius: 1.25rem; margin-top: 1rem;
+            background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+        }
         
         .hidden { display: none; }
-        .footer-button { padding: 0.6rem 1.2rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.2s ease-in-out; }
+        .footer-button {
+            padding: 0.65rem 1.3rem; border-radius: 9999px; font-weight: 600; font-size: 0.9rem;
+            border: 1px solid rgba(255,255,255,0.5);
+            -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+            box-shadow: 0 4px 14px rgba(31,41,55,0.10);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        }
+        .footer-button:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 6px 18px rgba(31,41,55,0.16); }
+        .footer-button:active { transform: translateY(0); }
+        .dark .footer-button { border-color: rgba(255,255,255,0.10); box-shadow: 0 4px 14px rgba(0,0,0,0.3); }
         
-        .details-section { margin-bottom: 2rem; padding: 1.5rem; background-color: #f0f9ff; border-radius: 0.5rem; border: 1px solid #e0f2fe; }
-        .dark .details-section { background-color: #0c4a6e; border-color: #075985; }
+        .details-section, .suggestion-section {
+            margin-bottom: 1.75rem; padding: 1.5rem; border-radius: 1.25rem;
+            background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); box-shadow: var(--glass-shadow);
+        }
+        .details-section { border-top: 3px solid var(--ios-teal); }
+        .suggestion-section { border-top: 3px solid var(--ios-indigo); }
         
-        .suggestion-section { margin-bottom: 2rem; padding: 1.5rem; background-color: #f0f5ff; border-radius: 0.5rem; border: 1px solid #e0e7ff; }
-        .dark .suggestion-section { background-color: #3730a3; border-color: #312e81; }
-        
-        #rotorTypeImage { border: 1px solid #e5e7eb; border-radius: 0.25rem; }
+        #rotorTypeImage { border: 1px solid rgba(15,23,42,0.08); border-radius: 0.75rem; }
         
         .prose { max-width: none; color: #374151; }
-        .prose h4 { font-size: 1.125rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .prose h4 { font-size: 1.125rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
         .prose h5 { font-size: 1rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
         .prose p { margin-top: 0.75rem; margin-bottom: 0.75rem; line-height: 1.6; }
         .prose ul, .prose ol { margin-top: 0.75rem; margin-bottom: 0.75rem; padding-left: 1.5rem; }
@@ -94,22 +244,76 @@
         .dark .prose h4, .dark .prose h5 { color: #F9FAFB; }
         .dark .prose strong { color: #FFFFFF; }
 
-        /* Result Cards */
+        /* Result Cards — frosted "widgets" */
         .result-card {
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 1px solid rgba(0,0,0,0.05);
-            border-radius: 0.5rem;
+            background-color: rgba(255, 255, 255, 0.45);
+            -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: 1rem;
             padding: 1rem;
+            box-shadow: 0 4px 16px rgba(31,41,55,0.06);
         }
         .dark .result-card {
-            background-color: rgba(0, 0, 0, 0.2);
-            border-color: rgba(255,255,255,0.05);
+            background-color: rgba(255,255,255,0.04);
+            border-color: rgba(255,255,255,0.08);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         }
 
         /* Auth Overlay */
         #authOverlay {
-            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            backdrop-filter: blur(20px) saturate(140%);
+            background: rgba(15,20,35,0.45);
         }
+        #authCard {
+            background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border); box-shadow: 0 20px 60px rgba(0,0,0,0.25), var(--glass-shadow);
+        }
+
+        /* --- ISO 20816 Severity Badges --- */
+        .zone-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; }
+        .zone-A { background-color: rgba(48,209,88,0.15); color: #1B8A3B; }
+        .zone-B { background-color: rgba(10,132,255,0.15); color: #0060DF; }
+        .zone-C { background-color: rgba(255,159,10,0.18); color: #B8690A; }
+        .zone-D { background-color: rgba(255,69,58,0.15); color: #C4281A; }
+        .dark .zone-A { background-color: rgba(48,209,88,0.18); color: #5FE383; }
+        .dark .zone-B { background-color: rgba(10,132,255,0.20); color: #7DB8FF; }
+        .dark .zone-C { background-color: rgba(255,159,10,0.20); color: #FFC069; }
+        .dark .zone-D { background-color: rgba(255,69,58,0.20); color: #FF9088; }
+
+        /* Sensitivity slider */
+        .sens-slider { width: 100%; accent-color: var(--ios-indigo); height: 4px; }
+
+        /* Analytics cards */
+        .analytics-stat-card { background: rgba(94,92,230,0.08); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(94,92,230,0.18); border-radius: 1rem; padding: 0.9rem; }
+        .dark .analytics-stat-card { background-color: rgba(94,92,230,0.12); border-color: rgba(148,146,255,0.25); }
+
+        /* --- IC Recommendation card --- */
+        .ic-suggestion-card {
+            border-radius: 1rem; padding: 1rem 1.1rem; margin-top: 0.5rem;
+            background: rgba(191,90,242,0.08); border: 1px solid rgba(191,90,242,0.22);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+        }
+        .dark .ic-suggestion-card { background: rgba(191,90,242,0.12); border-color: rgba(191,90,242,0.3); }
+        .ic-confidence-High { color: #1B8A3B; } .dark .ic-confidence-High { color: #5FE383; }
+        .ic-confidence-Medium { color: #B8690A; } .dark .ic-confidence-Medium { color: #FFC069; }
+        .ic-confidence-Low { color: #C4281A; } .dark .ic-confidence-Low { color: #FF9088; }
+
+        /* Day/Night capsule toggle */
+        #darkModeToggle {
+            width: 58px; height: 32px; border-radius: 9999px; position: relative;
+            background: rgba(120,130,150,0.18); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .dark #darkModeToggle { background: rgba(94,92,230,0.35); border-color: rgba(255,255,255,0.1); }
+        #darkModeKnob {
+            position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+            background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+        }
+        .dark #darkModeKnob { transform: translateX(26px); background: #1F2937; }
     </style>
 
     <script>
@@ -120,10 +324,10 @@
         }
     </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300 p-4 md:p-8 min-h-screen">
+<body class="text-gray-800 dark:text-gray-300 p-4 md:p-8 min-h-screen">
 
-    <div id="authOverlay" class="fixed inset-0 z-[100] bg-gray-900/80 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-gray-700">
+    <div id="authOverlay" class="fixed inset-0 z-[100] flex items-center justify-center">
+        <div id="authCard" class="p-8 rounded-3xl w-full max-w-md">
             <div class="text-center mb-6">
                 <img src="https://lgyladuiyezqccyjxqgn.supabase.co/storage/v1/object/public/Image/cbmlogo.png" alt="Logo" class="h-12 mx-auto mb-4">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Welcome Back</h2>
@@ -173,17 +377,35 @@
         </div>
     </div>
 
-    <div id="mainAppContainer" class="container mx-auto max-w-6xl bg-white dark:bg-gray-800 p-6 md:p-8 rounded-lg shadow-xl dark:shadow-gray-900/50 opacity-20 pointer-events-none transition-opacity duration-300">
-        
-        <div class="flex justify-end mb-2 text-sm text-gray-600 dark:text-gray-400 items-center gap-4">
-            <span id="currentUserDisplay"><i class="fas fa-user-circle"></i> Not Logged In</span>
-            <button id="btnLogout" class="text-red-500 hover:text-red-700 font-medium"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    <!-- Moved out of #mainAppContainer on purpose: that container uses backdrop-filter for the
+         glass effect, and any backdrop-filter/filter/transform on an ancestor creates a new
+         "containing block" in CSS — which makes position:fixed descendants position relative to
+         THAT ancestor's box instead of the actual viewport. Since #mainAppContainer is as tall as
+         the whole page, this modal was centering on the page's vertical midpoint, not the screen,
+         forcing a scroll to see it. Living here, as a direct child of <body>, it centers correctly
+         on the visible viewport regardless of scroll position. -->
+    <div id="cloudResultsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="glass-shell p-6 rounded-3xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <h3 class="text-xl font-bold mb-4 dark:text-white">My Balancing History</h3>
+            <div id="cloudResultsList" class="space-y-2"></div>
+            <button onclick="document.getElementById('cloudResultsModal').classList.add('hidden')" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Close</button>
         </div>
+    </div>
 
-        <button id="darkModeToggle" class="fixed top-4 right-4 z-50 p-2 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-lg transition-colors">
-            <svg id="sunIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-            <svg id="moonIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-        </button>
+    <div id="mainAppContainer" class="glass-shell container mx-auto max-w-6xl p-6 md:p-8 rounded-3xl opacity-20 pointer-events-none transition-opacity duration-300">
+        
+        <div class="flex justify-between mb-2 text-sm text-gray-600 dark:text-gray-400 items-center gap-4">
+            <button id="darkModeToggle" class="transition-colors" title="Toggle day / night mode">
+                <span id="darkModeKnob">
+                    <svg id="sunIcon" class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 15a5 5 0 100-10 5 5 0 000 10zM10 0a1 1 0 011 1v1a1 1 0 11-2 0V1a1 1 0 011-1zm0 18a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3.05 3.05a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zm12.02 12.02a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM0 10a1 1 0 011-1h1a1 1 0 110 2H1a1 1 0 01-1-1zm18 0a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1zM3.05 16.95a1 1 0 010-1.414l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0zM15.07 4.93a1 1 0 010-1.414l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0z"></path></svg>
+                    <svg id="moonIcon" class="w-4 h-4 text-indigo-300 hidden" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                </span>
+            </button>
+            <div class="flex items-center gap-4">
+                <span id="currentUserDisplay"><i class="fas fa-user-circle"></i> Not Logged In</span>
+                <button id="btnLogout" class="text-red-500 hover:text-red-700 font-medium"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
 
         <header class="mb-8 flex justify-between items-center flex-wrap">
             <img src="https://lgyladuiyezqccyjxqgn.supabase.co/storage/v1/object/public/Image/cbmlogo.png" alt="Left Logo" class="h-8 md:h-10" onerror="this.onerror=null; this.src='https://placehold.co/120x40/cccccc/333333?text=Logo+Error';">
@@ -199,22 +421,16 @@
                 <div class="input-group relative">
                     <label for="equipmentName" class="font-medium text-gray-700 dark:text-gray-300"><i class="fas fa-fan"></i> Equipment Name:</label>
                     <div class="flex gap-2">
-                        <input type="text" id="equipmentName" placeholder="e.g., Cooling Tower Fan" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="equipmentName" list="equipmentNameDatalist" placeholder="Type or pick from cloud..." autocomplete="off" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
+                        <datalist id="equipmentNameDatalist"></datalist>
                         <button id="searchCloudButton" class="mt-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 rounded" title="Search History">
                             <i class="fas fa-cloud-download-alt"></i>
                         </button>
                     </div>
+                    <p class="text-xs mt-1 text-gray-500 dark:text-gray-400">Pick a known equipment to auto-fill Plant, Vanes & Rotor Type below.</p>
                 </div>
 
-                <div id="cloudResultsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-                        <h3 class="text-xl font-bold mb-4 dark:text-white">My Balancing History</h3>
-                        <div id="cloudResultsList" class="space-y-2"></div>
-                        <button onclick="document.getElementById('cloudResultsModal').classList.add('hidden')" class="mt-4 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">Close</button>
-                    </div>
-                </div>
-
-                <div class="input-group">
+                <div id="plantNameFieldWrap" class="input-group hidden">
                     <label for="plantName" class="font-medium text-gray-700 dark:text-gray-300"><i class="fas fa-industry"></i> Plant:</label>
                     <input type="text" id="plantName" placeholder="e.g., Steel Melting Shop" class="mt-1 focus:ring-blue-500 focus:border-blue-500">
                 </div>
@@ -228,7 +444,7 @@
         <div class="details-section">
             <h2 class="text-xl font-semibold mb-4 text-sky-700 dark:text-sky-200"><i class="fas fa-cogs mr-2"></i> Equipment Details</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
-                <div class="input-group">
+                <div id="numVanesFieldWrap" class="input-group">
                     <label for="numVanes" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-certificate"></i> Number of Vanes:</label>
                     <input type="number" id="numVanes" value="12" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
                 </div>
@@ -248,6 +464,15 @@
                     <label for="rotorRPM" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-tachometer-alt"></i> Rotor RPM:</label>
                     <input type="number" id="rotorRPM" step="any" placeholder="e.g., 3000" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
                 </div>
+                <div class="input-group">
+                    <label for="machineClassSelect" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-shield-alt"></i> ISO 20816-1 Machine Class:</label>
+                    <select id="machineClassSelect" class="mt-1 focus:ring-sky-500 focus:border-sky-500" title="Used to grade vibration severity (Zone A-D)">
+                        <option value="1">Class I &mdash; Small machines, integral motors &le;15kW</option>
+                        <option value="2" selected>Class II &mdash; Medium machines, 15-300kW, no special foundation</option>
+                        <option value="3">Class III &mdash; Large machines, rigid & heavy foundations</option>
+                        <option value="4">Class IV &mdash; Large machines, flexible/soft foundations</option>
+                    </select>
+                </div>
                  <div class="input-group md:col-span-2">
                     <label for="measurementLocation" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-map-marker-alt"></i> Location for Plot & Splitting:</label>
                     <select id="measurementLocation" class="mt-1 focus:ring-sky-500 focus:border-sky-500">
@@ -259,7 +484,7 @@
                         <option value="OBA">Outboard Axial (OBA)</option>
                     </select>
                 </div>
-                 <div class="input-group md:col-span-2"> 
+                 <div id="rotorTypeFieldWrap" class="input-group md:col-span-2 hidden"> 
                     <label for="rotorTypeSelect" class="font-medium text-sky-700 dark:text-sky-300"><i class="fas fa-shapes"></i> Rotor Type:</label>
                     <div class="mt-1 flex flex-col items-center"> <select id="rotorTypeSelect" class="w-full md:w-auto md:min-w-[180px] focus:ring-sky-500 focus:border-sky-500">
                             <option value="">Select Type</option>
@@ -285,7 +510,7 @@
                 <i class="fas fa-edit"></i> Analyst Observations / Remarks:
             </label>
             <textarea id="analystRemarks" rows="3" 
-                class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                class="w-full p-3 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your observations, root cause findings, or recommendations here..."></textarea>
         </div>
 
@@ -312,13 +537,19 @@
             </div>
         </div>
 
-        <div class="mb-4 flex flex-wrap border-b border-gray-300 dark:border-gray-700">
+        <div class="mb-4">
+          <div id="tabBarWrap">
             <button id="tabStandard" class="tab-button active"><i class="fas fa-balance-scale-left mr-2"></i> Standard (Trial Run)</button>
             <button id="tabKnownIC" class="tab-button"><i class="fas fa-brain mr-2"></i> Known IC</button>
             <button id="tabTrim" class="tab-button"><i class="fas fa-cut mr-2"></i> Trim</button>
             <button id="tabSplitting" class="tab-button"><i class="fas fa-project-diagram mr-2"></i> Splitting</button>
+            <button id="tabTwoPlane" class="tab-button"><i class="fas fa-circle-notch mr-2"></i> Two-Plane</button>
+            <button id="tabMultiPlane" class="tab-button"><i class="fas fa-layer-group mr-2"></i> Multi-Plane</button>
+            <button id="tabAnalytics" class="tab-button"><i class="fas fa-chart-line mr-2"></i> Analytics</button>
             <button id="tabAbout" class="tab-button"><i class="fas fa-info-circle mr-2"></i> About</button>
+          </div>
         </div>
+
 
         <div id="main-content-stack" class="flex flex-col gap-8">
             <div>
@@ -389,11 +620,16 @@
                     <h2 class="text-xl font-semibold mb-4 text-purple-700 dark:text-purple-300">Correction with Known IC</h2>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Check one or more locations to include in calculation.</p>
                     <div class="overflow-x-auto">
-                      <div class="flex justify-end mb-2">
-    <button id="btnClearReadingsKnownIC" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-1 px-3 rounded transition">
+                      <div class="flex justify-between flex-wrap gap-2 mb-2">
+    <button id="btnSuggestKnownIC" class="text-sm bg-purple-600 hover:bg-purple-700 text-white font-medium py-1 px-3 rounded-full transition">
+        <i class="fas fa-magic mr-1"></i> Suggest Best IC Source
+    </button>
+    <button id="btnClearReadingsKnownIC" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-1 px-3 rounded-full transition">
         <i class="fas fa-eraser mr-1"></i> Clear Readings (Keep ICs)
     </button>
 </div>
+                    <p id="icSuggestionError" class="text-sm text-red-600 dark:text-red-400 font-medium mb-2 hidden"></p>
+                    <div id="icSuggestionPanel" class="space-y-2 mb-4 hidden"></div>
                         <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
                             <thead class="bg-gray-50 dark:bg-gray-700/50">
                                 <tr>
@@ -529,6 +765,214 @@
                      <p id="splitErrorMessage" class="mt-3 text-red-600 dark:text-red-400 font-medium hidden"></p>
                 </div>
 
+                <div id="contentTwoPlane" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-2 text-fuchsia-700 dark:text-fuchsia-300"><i class="fas fa-circle-notch mr-2"></i>Two-Plane Balancing</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Solves the coupled 2&times;2 system for rotors where correction in one plane affects vibration measured at both planes (cross-effect). Choose two measurement/correction planes, enter the Original run, then two Trial runs (weight added to Plane A only, then Plane B only, each measured at <em>both</em> planes).</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div class="input-group">
+                            <label class="text-gray-700 dark:text-gray-300">Plane A (e.g., Inboard):</label>
+                            <select id="tpPlaneASelect" class="focus:ring-fuchsia-500 focus:border-fuchsia-500">
+                                <option value="IBH">IBH</option><option value="IBV">IBV</option><option value="IBA">IBA</option>
+                                <option value="OBH">OBH</option><option value="OBV">OBV</option><option value="OBA">OBA</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label class="text-gray-700 dark:text-gray-300">Plane B (e.g., Outboard):</label>
+                            <select id="tpPlaneBSelect" class="focus:ring-fuchsia-500 focus:border-fuchsia-500">
+                                <option value="IBH">IBH</option><option value="IBV">IBV</option><option value="IBA">IBA</option>
+                                <option value="OBH">OBH</option><option value="OBV" selected>OBV</option><option value="OBA">OBA</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Run</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">A Amp</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">A Phase</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">B Amp</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">B Phase</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr>
+                                    <td class="px-2 py-1.5 font-medium">0. Original (O)</td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_oA_amp"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_oA_ang"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_oB_amp"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_oB_ang"></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1.5 font-medium">1. Trial wt on A (O+T1)</td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t1A_amp"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t1A_ang"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t1B_amp"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t1B_ang"></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-2 py-1.5 font-medium">2. Trial wt on B (O+T2)</td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t2A_amp"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t2A_ang"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t2B_amp"></td>
+                                    <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="tp_t2B_ang"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 class="text-lg font-medium mt-6 mb-2 text-gray-700 dark:text-gray-300"><i class="fas fa-weight-hanging mr-2"></i> Trial Weights Used</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="input-group">
+                            <label class="text-gray-700 dark:text-gray-300">Trial Wt 1 &mdash; Mass (g) @ Plane A:</label>
+                            <input type="number" step="any" class="table-input" id="tp_wt1_mass" placeholder="e.g., 10">
+                        </div>
+                        <div class="input-group">
+                            <label class="text-gray-700 dark:text-gray-300">Trial Wt 1 &mdash; Angle (&deg;):</label>
+                            <input type="number" step="any" class="table-input" id="tp_wt1_ang" placeholder="e.g., 0">
+                        </div>
+                        <div class="input-group">
+                            <label class="text-gray-700 dark:text-gray-300">Trial Wt 2 &mdash; Mass (g) @ Plane B:</label>
+                            <input type="number" step="any" class="table-input" id="tp_wt2_mass" placeholder="e.g., 10">
+                        </div>
+                        <div class="input-group">
+                            <label class="text-gray-700 dark:text-gray-300">Trial Wt 2 &mdash; Angle (&deg;):</label>
+                            <input type="number" step="any" class="table-input" id="tp_wt2_ang" placeholder="e.g., 0">
+                        </div>
+                    </div>
+
+                    <button id="calculateTwoPlaneButton" class="mt-6 w-full bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out">
+                        Solve Two-Plane System
+                    </button>
+                    <p id="tpErrorMessage" class="mt-3 text-red-600 dark:text-red-400 font-medium hidden"></p>
+
+                    <div id="tpResultsDisplay" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                        <div class="result-card border-green-300 dark:border-green-600 bg-green-100/50 dark:bg-green-800/30">
+                            <p class="font-semibold mb-2 text-green-800 dark:text-green-200">Correction Weight &mdash; Plane A (<span id="tpPlaneALabel">IBH</span>)</p>
+                            <div class="flex justify-between"><span>Mass:</span> <span id="tpW1Mass" class="font-mono font-bold text-lg">---</span> g</div>
+                            <div class="flex justify-between"><span>Angle:</span> <span id="tpW1Angle" class="font-mono font-bold text-lg">---</span>&deg;</div>
+                        </div>
+                        <div class="result-card border-green-300 dark:border-green-600 bg-green-100/50 dark:bg-green-800/30">
+                            <p class="font-semibold mb-2 text-green-800 dark:text-green-200">Correction Weight &mdash; Plane B (<span id="tpPlaneBLabel">OBV</span>)</p>
+                            <div class="flex justify-between"><span>Mass:</span> <span id="tpW2Mass" class="font-mono font-bold text-lg">---</span> g</div>
+                            <div class="flex justify-between"><span>Angle:</span> <span id="tpW2Angle" class="font-mono font-bold text-lg">---</span>&deg;</div>
+                        </div>
+                        <div class="md:col-span-2 result-card">
+                            <p class="font-semibold mb-2">Cross-Effect Coefficient Matrix (mm/s per g)</p>
+                            <p class="font-mono text-xs whitespace-pre" id="tpMatrixDisplay">---</p>
+                            <p class="text-xs mt-2 text-gray-500 dark:text-gray-400" id="tpCrossEffectNote"></p>
+                        </div>
+                        <div class="result-card flex flex-col items-center">
+                            <p class="font-semibold mb-2 text-center">Polar Plot &mdash; Plane A (<span id="tpPlotLabelA">IBH</span>)</p>
+                            <div id="tpPolarContainerA" style="position:relative; width:100%; max-width:320px;">
+                                <span id="tpRotArrowA" style="position:absolute; top:10px; left:10px; font-size:0.75rem; font-weight:700; z-index:10; pointer-events:none;" class="text-fuchsia-600 dark:text-fuchsia-300"></span>
+                                <canvas id="tpPolarCanvasA" style="width:100%; height:auto; border-radius:50%; background:rgba(255,255,255,0.35); cursor:crosshair;"></canvas>
+                                <div id="tpPolarTooltipA" style="position:absolute; display:none; pointer-events:none; z-index:20; background:rgba(20,23,35,0.85); color:#fff; padding:6px 12px; border-radius:8px; font-size:0.8rem; white-space:nowrap; box-shadow:0 8px 20px rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12);"></div>
+                            </div>
+                            <div id="tpPolarLegendA" class="grid grid-cols-1 gap-1 text-xs mt-2 w-full"></div>
+                        </div>
+                        <div class="result-card flex flex-col items-center">
+                            <p class="font-semibold mb-2 text-center">Polar Plot &mdash; Plane B (<span id="tpPlotLabelB">OBV</span>)</p>
+                            <div id="tpPolarContainerB" style="position:relative; width:100%; max-width:320px;">
+                                <span id="tpRotArrowB" style="position:absolute; top:10px; left:10px; font-size:0.75rem; font-weight:700; z-index:10; pointer-events:none;" class="text-fuchsia-600 dark:text-fuchsia-300"></span>
+                                <canvas id="tpPolarCanvasB" style="width:100%; height:auto; border-radius:50%; background:rgba(255,255,255,0.35); cursor:crosshair;"></canvas>
+                                <div id="tpPolarTooltipB" style="position:absolute; display:none; pointer-events:none; z-index:20; background:rgba(20,23,35,0.85); color:#fff; padding:6px 12px; border-radius:8px; font-size:0.8rem; white-space:nowrap; box-shadow:0 8px 20px rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12);"></div>
+                            </div>
+                            <div id="tpPolarLegendB" class="grid grid-cols-1 gap-1 text-xs mt-2 w-full"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="contentMultiPlane" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-2 text-teal-700 dark:text-teal-300"><i class="fas fa-layer-group mr-2"></i>Multi-Plane Balancing</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Generalizes Two-Plane to N correction planes &mdash; e.g. a long turbine rotor with HP, IP &amp; LP stages, or any rotor with several coupled correction planes. Enter the Original run, then one trial run per plane (weight added at that plane only, measured at <em>every</em> plane each time).</p>
+
+                    <div class="flex flex-wrap items-end gap-4 mb-4">
+                        <div class="input-group mb-0">
+                            <label class="text-gray-700 dark:text-gray-300">Number of Planes:</label>
+                            <select id="mpPlaneCount" class="focus:ring-teal-500 focus:border-teal-500">
+                                <option value="2">2</option>
+                                <option value="3" selected>3 (e.g. HP / IP / LP)</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                            </select>
+                        </div>
+                        <button id="mpBuildTablesButton" class="text-sm bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-full transition">
+                            <i class="fas fa-table mr-1"></i> Build / Reset Reading Table
+                        </button>
+                    </div>
+
+                    <div id="mpPlaneLabelsRow" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-4"></div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr id="mpTableHeadRow"><th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Run</th></tr>
+                            </thead>
+                            <tbody id="mpTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+
+                    <h3 class="text-lg font-medium mt-6 mb-2 text-gray-700 dark:text-gray-300"><i class="fas fa-weight-hanging mr-2"></i> Trial Weights Used (one per plane)</h3>
+                    <div id="mpTrialWeightsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+
+                    <button id="calculateMultiPlaneButton" class="mt-6 w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ease-in-out">
+                        Solve Multi-Plane System
+                    </button>
+                    <p id="mpErrorMessage" class="mt-3 text-red-600 dark:text-red-400 font-medium hidden"></p>
+
+                    <div id="mpResultsDisplay" class="mt-6 hidden">
+                        <div id="mpCorrectionCards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"></div>
+                        <div class="result-card mb-4">
+                            <p class="font-semibold mb-2">Cross-Effect Coefficient Matrix (mm/s per g)</p>
+                            <p class="font-mono text-xs whitespace-pre overflow-x-auto" id="mpMatrixDisplay">---</p>
+                            <p class="text-xs mt-2 text-gray-500 dark:text-gray-400" id="mpCrossEffectNote"></p>
+                        </div>
+                        <div id="mpPolarPlotsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+
+                <div id="contentAnalytics" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-2 text-rose-700 dark:text-rose-300"><i class="fas fa-chart-line mr-2"></i>Analytics &amp; History Trend</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Pulls every cloud-saved job for the Equipment Name entered above (<span id="analyticsEqLabel" class="font-semibold">&mdash;</span>) and tracks how vibration and balance quality changed over time.</p>
+
+                    <button id="loadAnalyticsButton" class="mb-4 bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        <i class="fas fa-cloud-download-alt mr-1"></i> Load History for this Equipment
+                    </button>
+                    <p id="analyticsErrorMessage" class="mt-1 mb-3 text-red-600 dark:text-red-400 font-medium hidden"></p>
+
+                    <div id="analyticsSummary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 hidden">
+                        <div class="analytics-stat-card"><p class="text-xs uppercase text-gray-500 dark:text-gray-400">Records Found</p><p class="text-xl font-bold" id="statRecordCount">0</p></div>
+                        <div class="analytics-stat-card"><p class="text-xs uppercase text-gray-500 dark:text-gray-400">Latest Amplitude</p><p class="text-xl font-bold" id="statLatestAmp">---</p></div>
+                        <div class="analytics-stat-card"><p class="text-xs uppercase text-gray-500 dark:text-gray-400">Best Recorded</p><p class="text-xl font-bold" id="statBestAmp">---</p></div>
+                        <div class="analytics-stat-card"><p class="text-xs uppercase text-gray-500 dark:text-gray-400">Trend</p><p class="text-xl font-bold" id="statTrend">---</p></div>
+                    </div>
+
+                    <div id="analyticsChartContainer" class="w-full hidden" style="max-width: 900px; margin: 0 auto;">
+                        <canvas id="analyticsTrendChart" height="120"></canvas>
+                    </div>
+
+                    <div class="overflow-x-auto mt-6">
+                        <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Date</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Plant</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Location</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">O Amp (mm/s)</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Final Amp (mm/s)</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Correction Wt</th>
+                                    <th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="analyticsHistoryTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div id="contentAbout" class="tab-content hidden">
                     <h2 class="text-xl font-semibold mb-4 text-gray-700 dark:text-gray-300">About This Calculator</h2>
                     <div class="prose"> <p>This Enhanced Single Plane Balancing Calculator (Vector Method) is designed to assist maintenance professionals and engineers in performing single-plane balancing of rotating machinery.</p>
@@ -600,6 +1044,39 @@
 
                 <div id="predictedResidualsDisplay" class="results-group mt-4 hidden dark:text-gray-200 text-center bg-white/40 dark:bg-black/20 p-2 rounded">
                      <p class="text-sm"><strong>Predicted Residuals (mm/s):</strong> <span id="predictedResidualsList" class="font-mono ml-2"></span></p>
+                </div>
+
+                <div id="trialQualityAssessment" class="results-group mt-4 hidden dark:text-gray-200 bg-white/40 dark:bg-black/20 p-3 rounded">
+                    <p class="text-sm font-semibold mb-2 text-center"><i class="fas fa-satellite-dish mr-1"></i> Trial Weight Signal Quality</p>
+                    <div id="trialQualityRows" class="space-y-1 text-sm"></div>
+                    <p class="text-xs text-center mt-2 text-gray-500 dark:text-gray-400" id="trialQualityNote"></p>
+                </div>
+
+                <div id="severityAssessment" class="results-group mt-4 hidden dark:text-gray-200 bg-white/40 dark:bg-black/20 p-3 rounded">
+                    <p class="text-sm font-semibold mb-2 text-center"><i class="fas fa-shield-alt mr-1"></i> ISO 20816-1 Severity Assessment (<span id="severityLocLabel">IBH</span>)</p>
+                    <div class="flex flex-wrap justify-center items-center gap-6 text-sm">
+                        <div class="flex items-center gap-2">Before: <span id="severityBeforeVal" class="font-mono font-bold">---</span> mm/s <span id="severityBeforeBadge" class="zone-badge zone-B">Zone B</span></div>
+                        <div class="flex items-center gap-2">Predicted After: <span id="severityAfterVal" class="font-mono font-bold">---</span> mm/s <span id="severityAfterBadge" class="zone-badge zone-A">Zone A</span></div>
+                    </div>
+                    <p class="text-xs text-center mt-2 text-gray-500 dark:text-gray-400" id="severityNote"></p>
+                </div>
+
+                <div id="whatIfPanel" class="results-group mt-4 hidden dark:text-gray-200 bg-indigo-50/60 dark:bg-indigo-900/20 p-4 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                    <p class="text-sm font-semibold mb-3 text-center text-indigo-800 dark:text-indigo-200"><i class="fas fa-sliders-h mr-1"></i> Live What-If: drag to test an alternate correction weight</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1"><span>Mass (g)</span><span id="whatIfMassLabel" class="font-mono font-bold">0.0</span></div>
+                            <input type="range" id="whatIfMassSlider" class="sens-slider" min="0" max="50" step="0.1" value="0">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-1"><span>Angle (&deg;)</span><span id="whatIfAngleLabel" class="font-mono font-bold">0</span></div>
+                            <input type="range" id="whatIfAngleSlider" class="sens-slider" min="0" max="359" step="1" value="0">
+                        </div>
+                    </div>
+                    <div class="text-center mt-3 text-sm">
+                        Predicted resultant vibration if this weight is applied: <span id="whatIfResultVal" class="font-mono font-bold text-lg ml-1">---</span> mm/s <span id="whatIfResultBadge" class="zone-badge zone-A ml-1">Zone A</span>
+                    </div>
+                    <p class="text-xs text-center mt-1 text-gray-500 dark:text-gray-400">Starts centered on the calculated correction weight &mdash; drag either slider to explore nearby options (e.g. rounding to an available weight) before you commit metal to the rotor.</p>
                 </div>
             </div>
             
@@ -895,6 +1372,18 @@ document.getElementById('btnClearReadingsKnownIC').addEventListener('click', () 
         const loadDataButton = document.getElementById('loadDataButton');
         const resetFormButton = document.getElementById('resetFormButton');
 
+        // *** Advanced module DOM refs ***
+        const machineClassSelect = document.getElementById('machineClassSelect');
+        const tabTwoPlaneButton = document.getElementById('tabTwoPlane');
+        const tabMultiPlaneButton = document.getElementById('tabMultiPlane');
+        const tabAnalyticsButton = document.getElementById('tabAnalytics');
+        const contentTwoPlaneDiv = document.getElementById('contentTwoPlane');
+        const contentMultiPlaneDiv = document.getElementById('contentMultiPlane');
+        const contentAnalyticsDiv = document.getElementById('contentAnalytics');
+        const severityAssessmentDiv = document.getElementById('severityAssessment');
+        const whatIfPanelDiv = document.getElementById('whatIfPanel');
+        let lastSeverityContext = null; // { plotLocation, O_vec, IC_vec, unitLabel }
+
         // --- AUTHENTICATION LOGIC ---
         
         // Toggle Forms
@@ -1000,12 +1489,63 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             saveButton.classList.add('hidden');    // Hide for everyone else
         }
 
+        loadEquipmentNameSuggestions();
+
     } else {
         currentUser = null;
         authOverlay.classList.remove('hidden');
         mainAppContainer.classList.add('opacity-20', 'pointer-events-none');
     }
 });
+
+        // --- Equipment Name cloud dropdown + progressive disclosure of identity fields ---
+        // (The existing "searchCloudButton" / cloudResultsModal history-pull flow is untouched —
+        // this only adds a datalist of known equipment names to the same input field.)
+        let knownEquipmentNames = new Set();
+        async function loadEquipmentNameSuggestions() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('balancing_records').select('equipment_name')
+                    .not('equipment_name', 'is', null).limit(1000);
+                if (error || !data) return;
+                knownEquipmentNames = new Set(data.map(r => r.equipment_name).filter(Boolean));
+                const datalist = document.getElementById('equipmentNameDatalist');
+                if (datalist) {
+                    datalist.innerHTML = Array.from(knownEquipmentNames).sort()
+                        .map(n => `<option value="${n.replace(/"/g, '&quot;')}"></option>`).join('');
+                }
+            } catch (e) { /* not authenticated yet, or offline — datalist just stays empty */ }
+        }
+
+        function setEquipmentIdentityFieldsVisible(visible) {
+            ['plantNameFieldWrap', 'rotorTypeFieldWrap'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', !visible);
+            });
+        }
+
+        async function handleEquipmentNameChange() {
+            const name = equipmentNameInput.value.trim();
+            if (!name) { setEquipmentIdentityFieldsVisible(false); return; }
+            setEquipmentIdentityFieldsVisible(true);
+            if (!knownEquipmentNames.has(name)) return; // freshly-typed name, not yet in the cloud — nothing to auto-fill
+            try {
+                const { data, error } = await supabaseClient
+                    .from('balancing_records').select('plant_name, full_data, report_date')
+                    .eq('equipment_name', name).order('report_date', { ascending: false }).limit(1);
+                if (error || !data || data.length === 0) return;
+                const rec = data[0];
+                const fd = rec.full_data || {};
+                if (rec.plant_name) plantNameInput.value = rec.plant_name;
+                if (fd.details && fd.details.numVanes) numVanesInput.value = fd.details.numVanes;
+                if (fd.details && fd.details.rotorType) {
+                    rotorTypeSelect.value = fd.details.rotorType;
+                    rotorTypeSelect.dispatchEvent(new Event('change'));
+                }
+            } catch (e) { /* leave fields as-is on any lookup failure */ }
+        }
+        equipmentNameInput.addEventListener('change', handleEquipmentNameChange);
+
 
         // --- *** Dark Mode Logic *** ---
         function setDarkMode(isDark) {
@@ -1021,6 +1561,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 moonIcon.classList.add('hidden');
             }
             drawPolarPlotBasedOnMode();
+            redrawTwoPlanePlots();
         }
 
         darkModeToggle.addEventListener('click', () => {
@@ -1041,6 +1582,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             try {
                 // Restore header
                 equipmentNameInput.value = loadedData.header.equipmentName || '';
+                setEquipmentIdentityFieldsVisible(!!loadedData.header.equipmentName);
                 plantNameInput.value = loadedData.header.plantName || '';
                 reportDateInput.value = loadedData.header.reportDate || new Date().toISOString().split('T')[0];
 
@@ -1183,6 +1725,137 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             scale(scalar) { return Vector.fromComponents(this.x * scalar, this.y * scalar); }
         }
 
+        // --- ISO 20816-1 Vibration Severity Grading (RMS velocity, mm/s) ---
+        // Zone boundaries (upper limit of each zone) per machine class, approximating ISO 20816-1 Table guidance.
+        const ISO20816_ZONES = {
+            "1": { A: 0.71, B: 1.8,  C: 4.5  }, // Class I - small machines
+            "2": { A: 1.12, B: 2.8,  C: 7.1  }, // Class II - medium machines
+            "3": { A: 1.8,  B: 4.5,  C: 11.2 }, // Class III - large, rigid foundation
+            "4": { A: 2.8,  B: 7.1,  C: 18.0 }  // Class IV - large, flexible/soft foundation
+        };
+        function getSeverityZone(vibMmS, machineClass = "2") {
+            if (vibMmS === null || vibMmS === undefined || isNaN(vibMmS) || !isFinite(vibMmS)) return null;
+            const bounds = ISO20816_ZONES[machineClass] || ISO20816_ZONES["2"];
+            const v = Math.abs(vibMmS);
+            if (v <= bounds.A) return { zone: 'A', label: 'Zone A - Good (new machine condition)' };
+            if (v <= bounds.B) return { zone: 'B', label: 'Zone B - Acceptable for long-term operation' };
+            if (v <= bounds.C) return { zone: 'C', label: 'Zone C - Unsatisfactory for continuous operation' };
+            return { zone: 'D', label: 'Zone D - Unacceptable, risk of damage' };
+        }
+        function applySeverityBadge(badgeEl, valueEl, vibMmS, machineClass) {
+            const res = getSeverityZone(vibMmS, machineClass);
+            if (!badgeEl) return res;
+            badgeEl.classList.remove('zone-A', 'zone-B', 'zone-C', 'zone-D');
+            if (!res) { badgeEl.textContent = 'N/A'; if (valueEl) valueEl.textContent = '---'; return null; }
+            badgeEl.classList.add('zone-' + res.zone);
+            badgeEl.textContent = 'Zone ' + res.zone;
+            badgeEl.title = res.label;
+            if (valueEl) valueEl.textContent = vibMmS.toFixed(3);
+            return res;
+        }
+
+        // --- Live "What-If" sensitivity: predicts resultant vibration for an arbitrary candidate weight ---
+        const whatIfMassSlider = document.getElementById('whatIfMassSlider');
+        const whatIfAngleSlider = document.getElementById('whatIfAngleSlider');
+        const whatIfMassLabel = document.getElementById('whatIfMassLabel');
+        const whatIfAngleLabel = document.getElementById('whatIfAngleLabel');
+        const whatIfResultVal = document.getElementById('whatIfResultVal');
+        const whatIfResultBadge = document.getElementById('whatIfResultBadge');
+
+        function recomputeWhatIf() {
+            if (!lastSeverityContext || !whatIfMassSlider) return;
+            const massG = parseFloat(whatIfMassSlider.value);
+            const angDeg = parseFloat(whatIfAngleSlider.value);
+            whatIfMassLabel.textContent = massG.toFixed(1);
+            whatIfAngleLabel.textContent = angDeg.toFixed(0);
+            const { O_vec, IC_vec } = lastSeverityContext;
+            if (!IC_vec || IC_vec.magnitude < 1e-9) { whatIfResultVal.textContent = 'N/A'; return; }
+            const candidateWeight = new Vector(massG, angDeg);
+            const predictedChange = IC_vec.multiply(candidateWeight);
+            const R = O_vec.add(predictedChange);
+            applySeverityBadge(whatIfResultBadge, whatIfResultVal, R.magnitude, machineClassSelect.value);
+        }
+        if (whatIfMassSlider) whatIfMassSlider.addEventListener('input', recomputeWhatIf);
+        if (whatIfAngleSlider) whatIfAngleSlider.addEventListener('input', recomputeWhatIf);
+        if (machineClassSelect) machineClassSelect.addEventListener('change', () => { recomputeWhatIf(); });
+
+        // Called after Standard / Known-IC / Trim calculations to populate the severity card + what-if sliders
+        function updateSeverityAndWhatIf(plotLocation, O_vec, IC_vec, CW_vec) {
+            if (!severityAssessmentDiv) return;
+            document.getElementById('severityLocLabel').textContent = plotLocation;
+            const beforeBadge = document.getElementById('severityBeforeBadge');
+            const beforeVal = document.getElementById('severityBeforeVal');
+            const afterBadge = document.getElementById('severityAfterBadge');
+            const afterVal = document.getElementById('severityAfterVal');
+            const note = document.getElementById('severityNote');
+
+            applySeverityBadge(beforeBadge, beforeVal, O_vec ? O_vec.magnitude : null, machineClassSelect.value);
+
+            let predictedAfterMag = null;
+            if (O_vec && IC_vec && IC_vec.magnitude > 1e-9 && CW_vec) {
+                const R = O_vec.add(IC_vec.multiply(CW_vec));
+                predictedAfterMag = R.magnitude;
+            }
+            const afterRes = applySeverityBadge(afterBadge, afterVal, predictedAfterMag, machineClassSelect.value);
+            if (afterRes) {
+                note.textContent = afterRes.label + ' — grading per ISO 20816-1, Machine Class ' + machineClassSelect.value + '.';
+            } else {
+                note.textContent = 'Not enough data to predict post-correction severity.';
+            }
+            severityAssessmentDiv.classList.remove('hidden');
+
+            // Set up what-if sliders centered on the calculated correction weight
+            if (IC_vec && IC_vec.magnitude > 1e-9 && CW_vec && O_vec) {
+                lastSeverityContext = { plotLocation, O_vec, IC_vec };
+                const centerMass = Math.max(0, CW_vec.magnitude);
+                whatIfMassSlider.min = 0;
+                whatIfMassSlider.max = Math.max(10, (centerMass * 3).toFixed(1));
+                whatIfMassSlider.value = centerMass.toFixed(2);
+                whatIfAngleSlider.value = Math.round(CW_vec.angleDeg);
+                whatIfPanelDiv.classList.remove('hidden');
+                recomputeWhatIf();
+            } else {
+                whatIfPanelDiv.classList.add('hidden');
+                lastSeverityContext = null;
+            }
+        }
+
+        function assessTrialWeightQuality(O_vec, OT_vec) {
+            if (!O_vec || !OT_vec) return null;
+            const V = OT_vec.subtract(O_vec);
+            const signalRatio = O_vec.magnitude > 1e-6 ? (V.magnitude / O_vec.magnitude) : (V.magnitude > 1e-6 ? Infinity : 0);
+            let phaseShift = Math.abs(normalizeAngle(OT_vec.angleDeg - O_vec.angleDeg));
+            if (phaseShift > 180) phaseShift = 360 - phaseShift;
+            let level, colorClass;
+            if (signalRatio >= 0.3 || phaseShift >= 30) { level = 'Good'; colorClass = 'ic-confidence-High'; }
+            else if (signalRatio >= 0.15 || phaseShift >= 15) { level = 'Marginal'; colorClass = 'ic-confidence-Medium'; }
+            else { level = 'Poor'; colorClass = 'ic-confidence-Low'; }
+            return { level, colorClass, signalRatio, phaseShift };
+        }
+
+        function displayTrialQualityAssessment(qualityByLoc) {
+            const panel = document.getElementById('trialQualityAssessment');
+            const rowsEl = document.getElementById('trialQualityRows');
+            const noteEl = document.getElementById('trialQualityNote');
+            const entries = Object.entries(qualityByLoc).filter(([, q]) => q !== null);
+            if (entries.length === 0) { panel.classList.add('hidden'); return; }
+            const rank = { 'Poor': 0, 'Marginal': 1, 'Good': 2 };
+            rowsEl.innerHTML = entries.map(([loc, q]) => `
+                <div class="flex justify-between items-center">
+                    <span>${loc}: response ${isFinite(q.signalRatio) ? (q.signalRatio * 100).toFixed(0) + '%' : '∞'} of original, phase shift ${q.phaseShift.toFixed(0)}°</span>
+                    <strong class="${q.colorClass}">${q.level}</strong>
+                </div>`).join('');
+            const worst = entries.map(([, q]) => q).sort((a, b) => rank[a.level] - rank[b.level])[0];
+            if (worst.level === 'Poor') {
+                noteEl.textContent = 'At least one location barely responded to the trial weight — the calculated IC there may be dominated by measurement noise rather than the rotor\'s true behavior. Consider repeating with a larger trial weight before trusting this correction.';
+            } else if (worst.level === 'Marginal') {
+                noteEl.textContent = 'Response is on the small side for at least one location — usable, but a larger trial weight would sharpen confidence in the IC.';
+            } else {
+                noteEl.textContent = 'Trial weight produced a clear, well-differentiated response everywhere it was checked — this IC should be reliable.';
+            }
+            panel.classList.remove('hidden');
+        }
+
         function populateInputTables() {
             let stdHtml = '';
             let kicHtml = '';
@@ -1258,8 +1931,8 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_amp_${loc}" value="${f_amp}" data-loc="${loc}" data-prop="finalAmp"></td>
         <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_res_phase_${loc}" value="${f_ang}" data-loc="${loc}" data-prop="finalAngle"></td>
         
-        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_mag_${loc}" value="${displayICMag}" data-loc="${loc}" data-prop="knownICMag"></td>
-        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input bg-gray-100 dark:bg-gray-700" id="trim_ic_ang_${loc}" value="${displayICAng}" data-loc="${loc}" data-prop="knownICAngle"></td>
+        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_ic_mag_${loc}" value="${displayICMag}" data-loc="${loc}" data-prop="knownICMag"></td>
+        <td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="trim_ic_ang_${loc}" value="${displayICAng}" data-loc="${loc}" data-prop="knownICAngle"></td>
         
         <td class="px-1 py-1.5 border-l border-gray-200 dark:border-gray-700 pl-3">
             <input type="number" step="any" class="table-input border-indigo-300 dark:border-indigo-700" id="trim_final_amp_${loc}" value="${data.trimFinalAmp !== null ? data.trimFinalAmp : ''}" data-loc="${loc}" data-prop="trimFinalAmp" placeholder="Final">
@@ -1390,6 +2063,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             if(trimResultsDiv) trimResultsDiv.classList.add('hidden');
 
             equipmentNameInput.value = '';
+            setEquipmentIdentityFieldsVisible(false);
             plantNameInput.value = '';
             reportDateInput.value = new Date().toISOString().split('T')[0]; 
 
@@ -1403,6 +2077,37 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             splitWeightResults = { w1: null, w2: null };
             document.getElementById('trialWeightRemovedCheckbox').checked = false;
             document.getElementById('strategyRemove').checked = true;
+
+            // --- Reset advanced-module state (severity/what-if, IC suggestions, Two-Plane, Analytics) ---
+            if (severityAssessmentDiv) severityAssessmentDiv.classList.add('hidden');
+            if (whatIfPanelDiv) whatIfPanelDiv.classList.add('hidden');
+            lastSeverityContext = null;
+
+            const icSugPanel = document.getElementById('icSuggestionPanel');
+            const icSugError = document.getElementById('icSuggestionError');
+            if (icSugPanel) { icSugPanel.innerHTML = ''; icSugPanel.classList.add('hidden'); }
+            if (icSugError) icSugError.classList.add('hidden');
+
+            document.querySelectorAll('#contentTwoPlane input').forEach(el => el.value = '');
+            document.getElementById('tpPlaneASelect').value = 'IBH';
+            document.getElementById('tpPlaneBSelect').value = 'OBV';
+            const tpErr = document.getElementById('tpErrorMessage');
+            const tpRes = document.getElementById('tpResultsDisplay');
+            if (tpErr) { tpErr.classList.add('hidden'); tpErr.textContent = ''; }
+            if (tpRes) tpRes.classList.add('hidden');
+            clearTwoPlanePlots();
+
+            const anaSummary = document.getElementById('analyticsSummary');
+            const anaChartContainer = document.getElementById('analyticsChartContainer');
+            const anaTableBody = document.getElementById('analyticsHistoryTableBody');
+            const anaError = document.getElementById('analyticsErrorMessage');
+            const anaEqLabel = document.getElementById('analyticsEqLabel');
+            if (anaSummary) anaSummary.classList.add('hidden');
+            if (anaChartContainer) anaChartContainer.classList.add('hidden');
+            if (anaTableBody) anaTableBody.innerHTML = '';
+            if (anaError) anaError.classList.add('hidden');
+            if (anaEqLabel) anaEqLabel.textContent = '\u2014';
+            if (analyticsChartInstance) { analyticsChartInstance.destroy(); analyticsChartInstance = null; }
 
             populateInputTables();
         }
@@ -1457,10 +2162,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
         // --- Event Listeners ---
         function switchTab(activeTabButton, activeContentDiv) {
-            [tabStandardButton, tabKnownICButton, tabTrimButton, tabSplittingButton, tabAboutButton].forEach(btn => btn.classList.remove('active'));
-            [contentStandardDiv, contentKnownICDiv, contentTrimDiv, contentSplittingDiv, contentAboutDiv].forEach(content => content.classList.add('hidden'));
+            [tabStandardButton, tabKnownICButton, tabTrimButton, tabSplittingButton, tabTwoPlaneButton, tabMultiPlaneButton, tabAnalyticsButton, tabAboutButton].forEach(btn => btn.classList.remove('active'));
+            [contentStandardDiv, contentKnownICDiv, contentTrimDiv, contentSplittingDiv, contentTwoPlaneDiv, contentMultiPlaneDiv, contentAnalyticsDiv, contentAboutDiv].forEach(content => content.classList.add('hidden'));
             
-            if (activeTabButton.id === 'tabAbout') {
+            if (activeTabButton.id === 'tabAbout' || activeTabButton.id === 'tabTwoPlane' || activeTabButton.id === 'tabMultiPlane' || activeTabButton.id === 'tabAnalytics') {
                 polarPlotColumn.classList.add('hidden');
             } else {
                 polarPlotColumn.classList.remove('hidden');
@@ -1512,6 +2217,12 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             prefillSplittingInputs();
         });
         tabAboutButton.addEventListener('click', () => switchTab(tabAboutButton, contentAboutDiv));
+        tabTwoPlaneButton.addEventListener('click', () => { switchTab(tabTwoPlaneButton, contentTwoPlaneDiv); redrawTwoPlanePlots(); });
+        tabMultiPlaneButton.addEventListener('click', () => { switchTab(tabMultiPlaneButton, contentMultiPlaneDiv); if (!document.getElementById('mpTableBody').children.length) buildMultiPlaneTables(); redrawMultiPlanePlots(); });
+        tabAnalyticsButton.addEventListener('click', () => {
+            switchTab(tabAnalyticsButton, contentAnalyticsDiv);
+            document.getElementById('analyticsEqLabel').textContent = equipmentNameInput.value || '(no equipment name set)';
+        });
 
 
         toggleTrialWeightSectionButton.addEventListener('click', () => {
@@ -1592,6 +2303,172 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         standardBalancingTableBody.addEventListener('change', storeTableDataToModel);
         knownIcTableBody.addEventListener('change', storeTableDataToModel);
         trimBalancingTableBody.addEventListener('change', storeTableDataToModel);
+
+        // *** INTELLIGENT IC DATASET RECOMMENDATION ***
+        // Ranks every influence-coefficient dataset available for this equipment/location by
+        // ACTUAL PROVEN PERFORMANCE first: if a historical job recorded a "Final Amp" (the
+        // analyst's real measured vibration after physically applying that IC's correction),
+        // that is ground truth — far more trustworthy than recency or RPM match alone. Only
+        // when no verified outcome exists do we fall back to (a) closeness to the consensus
+        // IC across all records for this location/RPM, then (b) RPM match / recency.
+        let icSuggestDebounceTimer = null;
+        async function suggestKnownIC() {
+            const errEl = document.getElementById('icSuggestionError');
+            const panel = document.getElementById('icSuggestionPanel');
+            errEl.classList.add('hidden');
+
+            const eqName = equipmentNameInput.value;
+            const currentRPM = parseFloat(rotorRPMInput.value);
+            if (!eqName) { errEl.textContent = 'Enter an Equipment Name at the top of the page so we can look up its IC history.'; errEl.classList.remove('hidden'); panel.classList.add('hidden'); return; }
+            if (isNaN(currentRPM) || currentRPM <= 0) { errEl.textContent = 'Enter the Rotor RPM in Equipment Details — IC datasets are matched by operating speed.'; errEl.classList.remove('hidden'); panel.classList.add('hidden'); return; }
+
+            const candidateLocs = locations.filter(loc => balancingData[loc].originalAmp !== null);
+            if (candidateLocs.length === 0) { errEl.textContent = 'Fill in the Original Amplitude for at least one location first.'; errEl.classList.remove('hidden'); panel.classList.add('hidden'); return; }
+
+            // Source 1: this session's own Standard-tab calculation (no proven outcome yet — it's brand new)
+            const sessionSources = {};
+            locations.forEach(loc => {
+                if (balancingData[loc].calculatedICMag !== null && balancingData[loc].calculatedICMag !== undefined) {
+                    sessionSources[loc] = { mag: balancingData[loc].calculatedICMag, ang: balancingData[loc].calculatedICAngle, rpm: currentRPM, date: 'this session', label: 'Calculated this session on the Standard tab', sourceType: 'session', provenFinalAmp: null };
+                }
+            });
+
+            // Source 2: cloud history for this equipment — pull the recorded Final Amp too (real, measured outcome)
+            let historyRecords = [];
+            try {
+                const { data, error } = await supabaseClient
+                    .from('balancing_records').select('report_date, full_data')
+                    .ilike('equipment_name', `%${eqName}%`).order('report_date', { ascending: false }).limit(40);
+                if (!error && data) historyRecords = data;
+            } catch (e) { /* degrade gracefully — session source still works offline */ }
+
+            panel.classList.remove('hidden');
+            let html = '';
+            for (const loc of candidateLocs) {
+                let candidates = [];
+                if (sessionSources[loc]) candidates.push(sessionSources[loc]);
+                historyRecords.forEach(rec => {
+                    const fd = rec.full_data || {};
+                    const locData = fd.balancingData ? fd.balancingData[loc] : null;
+                    const recRPM = parseFloat(fd.details ? fd.details.rotorRPM : NaN);
+                    const icMag = locData ? (locData.calculatedICMag ?? locData.knownICMag) : null;
+                    const icAng = locData ? (locData.calculatedICAngle ?? locData.knownICAngle) : null;
+                    const provenFinalAmp = (locData && typeof locData.finalAmp === 'number' && !isNaN(locData.finalAmp)) ? locData.finalAmp : null;
+                    // No Final Amp on record? Check whether the trial run itself already showed a
+                    // major drop in vibration (e.g. 10 → 1.5 mm/s) — that's incidental but real
+                    // evidence the trial weight placement was close to a good correction, so this
+                    // IC deserves more trust than a totally unverified one.
+                    let impliedGoodTrialAmp = null;
+                    if (provenFinalAmp === null && locData && typeof locData.originalAmp === 'number' && typeof locData.trialRunAmp === 'number' && locData.originalAmp > 0.05) {
+                        const dropRatio = (locData.originalAmp - locData.trialRunAmp) / locData.originalAmp;
+                        if (dropRatio >= 0.4) impliedGoodTrialAmp = locData.trialRunAmp;
+                    }
+                    if (icMag !== null && icMag !== undefined && icMag > 0 && !isNaN(recRPM)) {
+                        candidates.push({ mag: icMag, ang: icAng, rpm: recRPM, date: rec.report_date, label: `Cloud record dated ${rec.report_date}`, sourceType: 'history', provenFinalAmp, impliedGoodTrialAmp });
+                    }
+                });
+
+                if (candidates.length === 0) {
+                    html += `<div class="ic-suggestion-card"><p class="text-sm font-semibold">${loc}: No prior IC data found for this equipment.</p>
+                        <p class="text-xs mt-1 text-gray-600 dark:text-gray-400">Run a trial-weight calculation on the Standard tab, or save more balancing jobs to the cloud, to start building an IC library for this location.</p></div>`;
+                    continue;
+                }
+
+                candidates.forEach(c => { c.rpmDeltaPct = Math.abs(c.rpm - currentRPM) / currentRPM * 100; });
+                const RPM_TOLERANCE_PCT = 10; // beyond this, an IC is speed-mismatched enough to distrust
+
+                // Consensus IC across all candidates for this location — used only as a fallback
+                // signal for candidates with no proven outcome yet.
+                let sumVec = Vector.fromComponents(0, 0);
+                candidates.forEach(c => { sumVec = sumVec.add(new Vector(c.mag, c.ang)); });
+                const consensusVec = sumVec.scale(1 / candidates.length);
+                candidates.forEach(c => { c.consensusDelta = (new Vector(c.mag, c.ang)).subtract(consensusVec).magnitude; });
+
+                // Tiered ranking:
+                //  0/2 = proven (real Final Amp), on-speed / off-speed
+                //  1/3 = self-evidenced (trial run itself showed a major amplitude drop), on-speed / off-speed
+                //  4/5 = fully unverified — ranked by closeness to consensus IC, on-speed / off-speed
+                candidates.forEach(c => {
+                    const onSpeed = c.rpmDeltaPct <= RPM_TOLERANCE_PCT;
+                    if (c.provenFinalAmp !== null) c.tier = onSpeed ? 0 : 2;
+                    else if (c.impliedGoodTrialAmp !== null && c.impliedGoodTrialAmp !== undefined) c.tier = onSpeed ? 1 : 3;
+                    else c.tier = onSpeed ? 4 : 5;
+                });
+                candidates.sort((a, b) => {
+                    if (a.tier !== b.tier) return a.tier - b.tier;
+                    if (a.tier === 0 || a.tier === 2) return a.provenFinalAmp - b.provenFinalAmp; // lower real residual wins
+                    if (a.tier === 1 || a.tier === 3) return a.impliedGoodTrialAmp - b.impliedGoodTrialAmp; // lower implied residual wins
+                    return a.consensusDelta - b.consensusDelta; // closer to consensus wins
+                });
+                const best = candidates[0];
+                const otherCount = candidates.length - 1;
+
+                let confidence = 'Low', reasonLine;
+                if (best.tier === 0) {
+                    confidence = 'High';
+                    reasonLine = `Proven: this exact IC achieved <strong>${best.provenFinalAmp.toFixed(3)} mm/s</strong> residual when actually applied &bull; ${best.rpm} RPM (${best.rpmDeltaPct.toFixed(1)}% from current)`;
+                } else if (best.tier === 1) {
+                    confidence = 'Medium';
+                    reasonLine = `No Final Amp recorded, but the trial run itself dropped vibration to <strong>${best.impliedGoodTrialAmp.toFixed(3)} mm/s</strong> &mdash; incidental evidence this weight placement was already a good correction &bull; ${best.rpm} RPM (${best.rpmDeltaPct.toFixed(1)}% from current)`;
+                } else if (best.tier === 2) {
+                    confidence = 'Medium';
+                    reasonLine = `Proven at a different speed: achieved <strong>${best.provenFinalAmp.toFixed(3)} mm/s</strong> residual, but recorded at ${best.rpm} RPM (${best.rpmDeltaPct.toFixed(1)}% from current ${currentRPM} RPM) &mdash; verify before trusting fully`;
+                } else if (best.tier === 3) {
+                    confidence = 'Low';
+                    reasonLine = `Trial run showed a major drop to <strong>${best.impliedGoodTrialAmp.toFixed(3)} mm/s</strong>, but recorded at ${best.rpm} RPM (${best.rpmDeltaPct.toFixed(1)}% from current) &mdash; speed mismatch weakens the evidence`;
+                } else if (best.tier === 4) {
+                    confidence = 'Medium';
+                    reasonLine = `No verified outcome yet, but this reading is closest to the consensus IC across ${candidates.length} record(s) for this location &bull; ${best.rpm} RPM (${best.rpmDeltaPct.toFixed(1)}% from current)`;
+                } else {
+                    confidence = 'Low';
+                    reasonLine = `No verified outcome and RPM is ${best.rpmDeltaPct.toFixed(1)}% off current &mdash; use with caution, or run a fresh trial-weight calculation instead`;
+                }
+
+                html += `<div class="ic-suggestion-card">
+                    <p class="text-sm font-semibold">${loc}: recommended IC &mdash; <span class="font-mono">${best.mag.toFixed(3)} @ ${best.ang.toFixed(1)}&deg;</span></p>
+                    <p class="text-xs mt-1 text-gray-600 dark:text-gray-400">${best.label} &bull; ${reasonLine} &bull; Confidence: <strong class="ic-confidence-${confidence}">${confidence}</strong>${otherCount > 0 ? ` &bull; ${otherCount} other source(s) considered` : ''}</p>
+                    <button class="ic-apply-btn mt-2 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-full transition" data-loc="${loc}" data-mag="${best.mag}" data-ang="${best.ang}">Use this IC for ${loc}</button>
+                </div>`;
+            }
+            panel.innerHTML = html;
+            panel.querySelectorAll('.ic-apply-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const loc = btn.dataset.loc, mag = parseFloat(btn.dataset.mag), ang = parseFloat(btn.dataset.ang);
+                    balancingData[loc].knownICMag = mag;
+                    balancingData[loc].knownICAngle = ang;
+                    const magInput = document.getElementById(`kic_ic_mag_${loc}`);
+                    const angInput = document.getElementById(`kic_ic_ang_${loc}`);
+                    if (magInput) magInput.value = mag.toFixed(3);
+                    if (angInput) angInput.value = ang.toFixed(1);
+                    const trimMagInput = document.getElementById(`trim_ic_mag_${loc}`);
+                    const trimAngInput = document.getElementById(`trim_ic_ang_${loc}`);
+                    if (trimMagInput) trimMagInput.value = mag.toFixed(3);
+                    if (trimAngInput) trimAngInput.value = ang.toFixed(1);
+                    btn.textContent = 'Applied ✓';
+                    btn.disabled = true;
+                    btn.classList.add('opacity-60', 'cursor-default');
+                    // Selection made — collapse the whole suggestion panel shortly after, so it
+                    // doesn't linger showing stale recommendations once the user has acted on one.
+                    setTimeout(() => { panel.classList.add('hidden'); panel.innerHTML = ''; }, 900);
+                });
+            });
+        }
+        document.getElementById('btnSuggestKnownIC').addEventListener('click', suggestKnownIC);
+
+        // Auto-suggest: whenever the Original Amplitude changes in the Known IC table (and that
+        // tab is visible), re-run the recommendation automatically after a short pause in typing.
+        knownIcTableBody.addEventListener('change', (e) => {
+            if (e.target.dataset && e.target.dataset.prop === 'originalAmp' && !contentKnownICDiv.classList.contains('hidden')) {
+                clearTimeout(icSuggestDebounceTimer);
+                icSuggestDebounceTimer = setTimeout(suggestKnownIC, 300);
+            }
+        });
+        rotorRPMInput.addEventListener('change', () => {
+            if (!contentKnownICDiv.classList.contains('hidden') && !document.getElementById('icSuggestionPanel').classList.contains('hidden')) {
+                clearTimeout(icSuggestDebounceTimer);
+                icSuggestDebounceTimer = setTimeout(suggestKnownIC, 300);
+            }
+        });
         
         [trialWeightMassInput, trialWeightAngleInput].forEach(input => {
             if (input) input.addEventListener('change', () => {
@@ -1666,6 +2543,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             const locsToProcess = Array.from(checkedRows).map(cb => cb.dataset.location);
 
             let CW_vec = null, allInfluenceCoefficients = {}, missingData = false;
+            const trialQualityByLoc = {};
 
             for (const loc of locsToProcess) {
                 const data = balancingData[loc];
@@ -1680,8 +2558,10 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 balancingData[loc].calculatedICMag = alpha_i.magnitude;
                 balancingData[loc].calculatedICAngle = alpha_i.angleDeg;
                 balancingData[loc].lastOriginalForPlot = O_i;
+                trialQualityByLoc[loc] = assessTrialWeightQuality(O_i, OT_i);
             }
             if (missingData) return;
+            displayTrialQualityAssessment(trialQualityByLoc);
 
             if (locsToProcess.length === 1) {
                 const loc = locsToProcess[0];
@@ -1759,12 +2639,18 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             updateResultsTables();
             prefillSplittingInputs();
             drawPolarPlotBasedOnMode();
+
+            // Severity grading + live what-if, anchored on the plot location's own O vector & IC (if available)
+            const plotO_vec = balancingData[plotLocation].originalAmp !== null ? new Vector(balancingData[plotLocation].originalAmp, balancingData[plotLocation].originalAngle) : null;
+            const plotIC_vec = allInfluenceCoefficients[plotLocation] || null;
+            updateSeverityAndWhatIf(plotLocation, plotO_vec, plotIC_vec, CW_vec);
         });
 
         // *** KNOWN IC CALCULATION ***
         calculateKnownICButton.addEventListener('click', () => {
             clearError();
             resultsDisplayDiv.classList.add('hidden');
+            document.getElementById('trialQualityAssessment').classList.add('hidden');
 
             const checkedRows = document.querySelectorAll('.loc-checkbox-knownic:checked');
             if (checkedRows.length === 0) { displayError("Select at least one location from the table to calculate."); return; }
@@ -1847,12 +2733,17 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
             prefillSplittingInputs();
             drawPolarPlotBasedOnMode();
+
+            const plotO_vec2 = balancingData[plotLocation].originalAmp !== null ? new Vector(balancingData[plotLocation].originalAmp, balancingData[plotLocation].originalAngle) : null;
+            const plotIC_vec2 = allInfluenceCoefficients[plotLocation] || null;
+            updateSeverityAndWhatIf(plotLocation, plotO_vec2, plotIC_vec2, CW_vec);
         });
         
         // *** TRIM CALCULATION (MULTI-POINT) ***
         calculateTrimButton.addEventListener('click', () => {
             clearError();
             trimResultsDiv.classList.add('hidden');
+            document.getElementById('trialQualityAssessment').classList.add('hidden');
 
             const checkedRows = document.querySelectorAll('.loc-checkbox-trim:checked');
             if (checkedRows.length === 0) { 
@@ -1974,6 +2865,17 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
             plotLocationLabelSpan.textContent = measurementLocationSelect.value;
             drawPolarPlotBasedOnMode();
+
+            // Severity grading + live what-if for Trim — "before" is the residual vibration
+            // that triggered this trim, "after" uses whichever correction (solo or merged
+            // total) is currently in effect for the plot location.
+            const trimData = balancingData[plotLocation];
+            const trimO_vec = (trimData.finalAmp !== null && trimData.finalAmp !== undefined) ? new Vector(trimData.finalAmp, trimData.finalAngle) : null;
+            const trimICMag = (trimData.calculatedICMag !== null && isFinite(trimData.calculatedICMag)) ? trimData.calculatedICMag : trimData.knownICMag;
+            const trimICAng = (trimData.calculatedICAngle !== null && isFinite(trimData.calculatedICAngle)) ? trimData.calculatedICAngle : trimData.knownICAngle;
+            const trimIC_vec = (trimICMag !== null && trimICMag !== undefined) ? new Vector(trimICMag, trimICAng) : null;
+            const trimCW_vec = (trimData.correctionMass !== null && trimData.correctionMass !== undefined) ? new Vector(trimData.correctionMass, trimData.correctionAngle) : null;
+            updateSeverityAndWhatIf(plotLocation, trimO_vec, trimIC_vec, trimCW_vec);
         });
 
 
@@ -2032,6 +2934,567 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
             drawPolarPlotBasedOnMode(); 
         });
 
+
+        // *** TWO-PLANE BALANCING ***
+        let lastTwoPlaneResult = null; // { planeA, planeB, O_A, W_A, O_B, W_B } — kept so we can redraw on tab-switch / dark-mode toggle
+        function tpVal(id) { return parseFloat(document.getElementById(id).value); }
+
+        // Lightweight standalone polar plot (no interactive hover) for a single vector pair.
+        // Reuses the same vane/grid visual language as the main plot but is self-contained so it
+        // can be drawn twice (Plane A / Plane B) without touching the primary interactive canvas.
+        // Full-featured polar plot renderer (grid rings + labels, vane numbering, rotation-aware
+        // vectors, High Spot marker, legend, hover tooltip) — same visual language as the main
+        // Standard/Known-IC plot, generalized so it can also drive the Two-Plane mini plots.
+        let tpHitBoxesA = [], tpHitBoxesB = [];
+        function renderPlanePolarPlot(canvasEl, containerEl, legendEl, rotArrowEl, O_vec, Wc_vec, planeLabel, hitboxArrayRef, vaneCountOverride) {
+            if (!canvasEl || !containerEl) return;
+            hitboxArrayRef.length = 0;
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const gridColor = isDarkMode ? "#4B5563" : "#D1D5DB";
+            const labelColor = isDarkMode ? "#D1D5DB" : "#374151";
+            const vaneLabelColor = isDarkMode ? "#9CA3AF" : "#6B7280";
+            const bgColor = isDarkMode ? "#1F2937" : "#ffffff";
+            const colorO = isDarkMode ? "#60A5FA" : "blue";
+            const colorWc = isDarkMode ? "#FDBA74" : "orange";
+            const hsColor = isDarkMode ? "#F87171" : "red";
+            const numVanesPlot = (vaneCountOverride && vaneCountOverride > 0) ? vaneCountOverride : (parseInt(numVanesInput.value) || 12);
+            const rotationDir = rotationDirectionInput.value;
+            if (rotArrowEl) rotArrowEl.textContent = rotationDir === 'CW' ? '0° (CW ↻)' : '0° (CCW ↺)';
+
+            const containerWidth = containerEl.clientWidth || 300;
+            canvasEl.width = containerWidth;
+            canvasEl.height = containerWidth;
+            const c = canvasEl.getContext('2d');
+            const centerX = canvasEl.width / 2, centerY = canvasEl.height / 2;
+            const plotRadius = Math.min(centerX, centerY) * 0.75;
+
+            c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+            c.fillStyle = bgColor; c.fillRect(0, 0, canvasEl.width, canvasEl.height);
+
+            let scaleAmp = 1.0;
+            const amps = [];
+            if (O_vec && O_vec.magnitude > 1e-9) amps.push(O_vec.magnitude);
+            if (Wc_vec && Wc_vec.magnitude > 1e-9) amps.push(Wc_vec.magnitude);
+            if (amps.length > 0) scaleAmp = Math.max(...amps);
+            if (scaleAmp < 0.1) scaleAmp = 1.0;
+            const scale = plotRadius / scaleAmp;
+
+            // Grid circles + amplitude ring labels
+            c.strokeStyle = gridColor; c.fillStyle = labelColor; c.font = "10px Arial";
+            c.textAlign = "center"; c.textBaseline = "middle";
+            const numCircles = 4;
+            for (let i = 1; i <= numCircles; i++) {
+                const r = (plotRadius / numCircles) * i;
+                c.beginPath(); c.arc(centerX, centerY, r, 0, 2 * Math.PI); c.stroke();
+                const val = (scaleAmp / numCircles) * i;
+                const labelX = centerX + r * 0.707, labelY = centerY - r * 0.707;
+                c.clearRect(labelX - 10, labelY - 6, 20, 12);
+                c.fillText(val.toFixed(1), labelX, labelY);
+            }
+
+            // Vanes + rotation-aware numbering (matches main plot convention)
+            const angleStep = 360 / numVanesPlot;
+            for (let i = 0; i < numVanesPlot; i++) {
+                const rad = toRadians(i * angleStep);
+                const xEnd = centerX + plotRadius * Math.cos(rad);
+                const yEnd = centerY - plotRadius * Math.sin(rad);
+                c.globalAlpha = 0.3;
+                c.beginPath(); c.moveTo(centerX, centerY); c.lineTo(xEnd, yEnd); c.stroke();
+                c.globalAlpha = 1.0;
+                let vaneLabel = (rotationDir === "CW") ? i : ((i === 0) ? 0 : (numVanesPlot - i));
+                const lx = centerX + (plotRadius + 14) * Math.cos(rad);
+                const ly = centerY - (plotRadius + 14) * Math.sin(rad);
+                c.fillStyle = vaneLabelColor; c.font = "10px Arial";
+                c.fillText(vaneLabel, lx, ly);
+            }
+
+            function drawVec(vector, color, label) {
+                if (!vector || vector.magnitude < 1e-9) return;
+                let plotAngleRad = vector.angleRad;
+                if (rotationDir === "CCW") plotAngleRad = (vector.angleDeg !== 0) ? toRadians(normalizeAngle(360 - vector.angleDeg)) : 0;
+                const x = centerX + vector.magnitude * scale * Math.cos(plotAngleRad);
+                const y = centerY - vector.magnitude * scale * Math.sin(plotAngleRad);
+                c.strokeStyle = color; c.fillStyle = color; c.lineWidth = 3;
+                c.beginPath(); c.moveTo(centerX, centerY); c.lineTo(x, y); c.stroke();
+                const headLength = 12, arrowAngle = Math.atan2(y - centerY, x - centerX);
+                c.beginPath();
+                c.moveTo(x, y);
+                c.lineTo(x - headLength * Math.cos(arrowAngle - Math.PI / 6), y - headLength * Math.sin(arrowAngle - Math.PI / 6));
+                c.lineTo(x - headLength * Math.cos(arrowAngle + Math.PI / 6), y - headLength * Math.sin(arrowAngle + Math.PI / 6));
+                c.closePath(); c.fill();
+                hitboxArrayRef.push({ type: 'vector', startX: centerX, startY: centerY, endX: x, endY: y, label, val: `${vector.magnitude.toFixed(3)} @ ${vector.angleDeg.toFixed(1)}°` });
+            }
+            drawVec(O_vec, colorO, `Original (O)`);
+            drawVec(Wc_vec, colorWc, `Correction (Wc)`);
+
+            // High Spot marker, same convention as the main plot
+            let highSpotLegendVal = '---';
+            if (O_vec && O_vec.magnitude > 1e-9) {
+                let hsAngle = O_vec.angleDeg;
+                if (rotationDir === "CCW" && hsAngle !== 0) hsAngle = normalizeAngle(360 - hsAngle);
+                const hsRad = toRadians(hsAngle);
+                const hsX = centerX + plotRadius * Math.cos(hsRad), hsY = centerY - plotRadius * Math.sin(hsRad);
+                c.beginPath(); c.arc(hsX, hsY, 5, 0, 2 * Math.PI); c.fillStyle = hsColor; c.fill();
+                highSpotLegendVal = `${O_vec.angleDeg.toFixed(1)}°`;
+                hitboxArrayRef.push({ type: 'point', x: hsX, y: hsY, r: 8, label: 'High Spot (HS)', val: highSpotLegendVal });
+            }
+
+            if (legendEl) {
+                const fmt = (v) => v && v.magnitude > 1e-9 ? `${v.magnitude.toFixed(3)} @ ${v.angleDeg.toFixed(1)}°` : '---';
+                legendEl.innerHTML = `
+                    <div class="${isDarkMode ? 'text-blue-400' : 'text-blue-600'}"><span class="legend-color-box" style="background-color:${colorO}"></span>Orig (O): <span class="legend-value text-gray-800 dark:text-gray-200 font-bold">${fmt(O_vec)}</span></div>
+                    <div class="${isDarkMode ? 'text-orange-300' : 'text-orange-500'}"><span class="legend-color-box" style="background-color:${colorWc}"></span>Corr (Wc): <span class="legend-value text-gray-800 dark:text-gray-200 font-bold">${fmt(Wc_vec)}</span></div>
+                    <div class="${isDarkMode ? 'text-red-400' : 'text-red-600'}"><span class="legend-dot" style="background-color:${hsColor}"></span>High Spot (HS): <span class="legend-value text-gray-800 dark:text-gray-200 font-bold">${highSpotLegendVal}</span></div>
+                `;
+            }
+        }
+
+        function setupMiniCanvasInteractivity(canvasId, containerId, tooltipId, hitboxArrayRef) {
+            const cv = document.getElementById(canvasId);
+            const tip = document.getElementById(tooltipId);
+            const cont = document.getElementById(containerId);
+            if (!cv || !tip || !cont) return;
+            cv.addEventListener('mousemove', (e) => {
+                const rect = cv.getBoundingClientRect();
+                const mouseX = (e.clientX - rect.left) * (cv.width / rect.width);
+                const mouseY = (e.clientY - rect.top) * (cv.height / rect.height);
+                let found = null;
+                for (const item of hitboxArrayRef) {
+                    if (item.type === 'point') { const d = Math.hypot(mouseX - item.x, mouseY - item.y); if (d < item.r + 5) { found = item; break; } }
+                }
+                if (!found) {
+                    for (const item of hitboxArrayRef) {
+                        if (item.type === 'vector') {
+                            const A = mouseX - item.startX, B = mouseY - item.startY, C = item.endX - item.startX, D = item.endY - item.startY;
+                            const dot = A * C + B * D, lenSq = C * C + D * D;
+                            let param = lenSq !== 0 ? dot / lenSq : -1, xx, yy;
+                            if (param < 0) { xx = item.startX; yy = item.startY; } else if (param > 1) { xx = item.endX; yy = item.endY; } else { xx = item.startX + param * C; yy = item.startY + param * D; }
+                            const d = Math.hypot(mouseX - xx, mouseY - yy);
+                            if (d < 10) { found = item; break; }
+                        }
+                    }
+                }
+                if (found) {
+                    tip.style.display = 'block';
+                    const contRect = cont.getBoundingClientRect();
+                    tip.style.left = (e.clientX - contRect.left + 15) + 'px';
+                    tip.style.top = (e.clientY - contRect.top + 15) + 'px';
+                    tip.innerHTML = `<strong>${found.label}</strong><br>${found.val}`;
+                    cv.style.cursor = 'pointer';
+                } else { tip.style.display = 'none'; cv.style.cursor = 'crosshair'; }
+            });
+            cv.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+        }
+        setupMiniCanvasInteractivity('tpPolarCanvasA', 'tpPolarContainerA', 'tpPolarTooltipA', tpHitBoxesA);
+        setupMiniCanvasInteractivity('tpPolarCanvasB', 'tpPolarContainerB', 'tpPolarTooltipB', tpHitBoxesB);
+
+        function clearTwoPlanePlots() {
+            lastTwoPlaneResult = null;
+            ['tpPolarCanvasA', 'tpPolarCanvasB'].forEach(id => {
+                const cv = document.getElementById(id);
+                if (cv) { const c = cv.getContext('2d'); c.clearRect(0, 0, cv.width, cv.height); }
+            });
+            ['tpPolarLegendA', 'tpPolarLegendB'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+        }
+
+        function redrawTwoPlanePlots() {
+            if (!lastTwoPlaneResult) return;
+            renderPlanePolarPlot(document.getElementById('tpPolarCanvasA'), document.getElementById('tpPolarContainerA'), document.getElementById('tpPolarLegendA'), document.getElementById('tpRotArrowA'), lastTwoPlaneResult.O_A, lastTwoPlaneResult.W_A, lastTwoPlaneResult.planeA, tpHitBoxesA);
+            renderPlanePolarPlot(document.getElementById('tpPolarCanvasB'), document.getElementById('tpPolarContainerB'), document.getElementById('tpPolarLegendB'), document.getElementById('tpRotArrowB'), lastTwoPlaneResult.O_B, lastTwoPlaneResult.W_B, lastTwoPlaneResult.planeB, tpHitBoxesB);
+        }
+
+        document.getElementById('calculateTwoPlaneButton').addEventListener('click', () => {
+            const tpErrorP = document.getElementById('tpErrorMessage');
+            const tpResults = document.getElementById('tpResultsDisplay');
+            tpErrorP.classList.add('hidden');
+            tpResults.classList.add('hidden');
+
+            const planeA = document.getElementById('tpPlaneASelect').value;
+            const planeB = document.getElementById('tpPlaneBSelect').value;
+            if (planeA === planeB) { tpErrorP.textContent = 'Plane A and Plane B must be different locations.'; tpErrorP.classList.remove('hidden'); return; }
+
+            const vals = ['tp_oA_amp','tp_oA_ang','tp_oB_amp','tp_oB_ang','tp_t1A_amp','tp_t1A_ang','tp_t1B_amp','tp_t1B_ang',
+                          'tp_t2A_amp','tp_t2A_ang','tp_t2B_amp','tp_t2B_ang','tp_wt1_mass','tp_wt1_ang','tp_wt2_mass','tp_wt2_ang']
+                          .map(tpVal);
+            if (vals.some(v => isNaN(v))) { tpErrorP.textContent = 'Please fill in every field (Original, both trial runs, and both trial weights) before solving.'; tpErrorP.classList.remove('hidden'); return; }
+            const [oAamp,oAang,oBamp,oBang,t1Aamp,t1Aang,t1Bamp,t1Bang,t2Aamp,t2Aang,t2Bamp,t2Bang,wt1m,wt1a,wt2m,wt2a] = vals;
+            if (wt1m <= 1e-9 || wt2m <= 1e-9) { tpErrorP.textContent = 'Trial weight masses must be positive.'; tpErrorP.classList.remove('hidden'); return; }
+
+            const O_A = new Vector(oAamp, oAang), O_B = new Vector(oBamp, oBang);
+            const T1_A = new Vector(t1Aamp, t1Aang), T1_B = new Vector(t1Bamp, t1Bang);
+            const T2_A = new Vector(t2Aamp, t2Aang), T2_B = new Vector(t2Bamp, t2Bang);
+            const Wt1 = new Vector(wt1m, wt1a), Wt2 = new Vector(wt2m, wt2a);
+
+            // Cross-effect influence coefficients
+            const a_AA = T1_A.subtract(O_A).divide(Wt1); // effect at A from weight at A
+            const a_BA = T1_B.subtract(O_B).divide(Wt1); // effect at B from weight at A
+            const a_BB = T2_B.subtract(O_B).divide(Wt2); // effect at B from weight at B
+            const a_AB = T2_A.subtract(O_A).divide(Wt2); // effect at A from weight at B
+
+            const D = a_AA.multiply(a_BB).subtract(a_AB.multiply(a_BA));
+            if (D.magnitude < 1e-12) {
+                tpErrorP.textContent = 'System is singular (determinant ~0). The two trial runs did not produce independent enough data — repeat with a larger or differently placed trial weight.';
+                tpErrorP.classList.remove('hidden');
+                return;
+            }
+            const negO_A = O_A.negate(), negO_B = O_B.negate();
+            const W_A = negO_A.multiply(a_BB).subtract(a_AB.multiply(negO_B)).divide(D);
+            const W_B = a_AA.multiply(negO_B).subtract(negO_A.multiply(a_BA)).divide(D);
+
+            document.getElementById('tpPlaneALabel').textContent = planeA;
+            document.getElementById('tpPlaneBLabel').textContent = planeB;
+            document.getElementById('tpW1Mass').textContent = W_A.magnitude.toFixed(3);
+            document.getElementById('tpW1Angle').textContent = W_A.angleDeg.toFixed(1);
+            document.getElementById('tpW2Mass').textContent = W_B.magnitude.toFixed(3);
+            document.getElementById('tpW2Angle').textContent = W_B.angleDeg.toFixed(1);
+            document.getElementById('tpMatrixDisplay').textContent =
+`         Plane A wt          Plane B wt
+At A:  ${a_AA.magnitude.toFixed(3)} @ ${a_AA.angleDeg.toFixed(1)}°     ${a_AB.magnitude.toFixed(3)} @ ${a_AB.angleDeg.toFixed(1)}°
+At B:  ${a_BA.magnitude.toFixed(3)} @ ${a_BA.angleDeg.toFixed(1)}°     ${a_BB.magnitude.toFixed(3)} @ ${a_BB.angleDeg.toFixed(1)}°`;
+            const crossRatio = (a_AB.magnitude + a_BA.magnitude) / (a_AA.magnitude + a_BB.magnitude + 1e-9);
+            document.getElementById('tpCrossEffectNote').textContent = crossRatio > 0.3
+                ? `Strong cross-coupling detected (off-diagonal terms are ${(crossRatio*100).toFixed(0)}% of the direct terms) — this rotor genuinely needs two-plane treatment, single-plane correction would leave residual imbalance at the other plane.`
+                : `Cross-coupling is relatively small (${(crossRatio*100).toFixed(0)}% of direct terms) — planes are fairly independent, single-plane balancing at each end separately would also work reasonably well.`;
+            tpResults.classList.remove('hidden');
+
+            document.getElementById('tpPlotLabelA').textContent = planeA;
+            document.getElementById('tpPlotLabelB').textContent = planeB;
+            lastTwoPlaneResult = { planeA, planeB, O_A, W_A, O_B, W_B };
+            redrawTwoPlanePlots();
+        });
+
+        // *** MULTI-PLANE BALANCING (N planes, e.g. HP/IP/LP turbine stages) ***
+        // Generalizes the Two-Plane cross-effect math to any N via a proper complex-number
+        // Gaussian elimination solve: alpha (N×N) · W (N×1) = -O (N×1).
+        let mpHitBoxes = []; // one shared array is fine — mini plots are rendered/redrawn one at a time into their own canvases
+        let lastMultiPlaneResult = null; // { labels: [...], O: [Vector...], W: [Vector...] }
+
+        function solveComplexLinearSystem(A, b) {
+            const n = b.length;
+            const M = A.map(row => row.slice());
+            const rhs = b.slice();
+            for (let col = 0; col < n; col++) {
+                let maxRow = col, maxMag = M[col][col].magnitude;
+                for (let r = col + 1; r < n; r++) {
+                    if (M[r][col].magnitude > maxMag) { maxMag = M[r][col].magnitude; maxRow = r; }
+                }
+                if (maxMag < 1e-9) return null; // singular — trial runs weren't independent enough
+                if (maxRow !== col) { [M[col], M[maxRow]] = [M[maxRow], M[col]]; [rhs[col], rhs[maxRow]] = [rhs[maxRow], rhs[col]]; }
+                const pivot = M[col][col];
+                for (let c = col; c < n; c++) M[col][c] = M[col][c].divide(pivot);
+                rhs[col] = rhs[col].divide(pivot);
+                for (let r = 0; r < n; r++) {
+                    if (r === col) continue;
+                    const factor = M[r][col];
+                    if (factor.magnitude < 1e-15) continue;
+                    for (let c = col; c < n; c++) M[r][c] = M[r][c].subtract(factor.multiply(M[col][c]));
+                    rhs[r] = rhs[r].subtract(factor.multiply(rhs[col]));
+                }
+            }
+            return rhs;
+        }
+
+        function buildMultiPlaneTables() {
+            const n = parseInt(document.getElementById('mpPlaneCount').value) || 3;
+            const defaultLabels3 = ['HP', 'IP', 'LP'];
+            const labelsRow = document.getElementById('mpPlaneLabelsRow');
+            labelsRow.innerHTML = Array.from({ length: n }, (_, i) => {
+                const def = (n === 3) ? defaultLabels3[i] : `Plane ${i + 1}`;
+                return `<div class="input-group mb-0">
+                    <label class="text-gray-700 dark:text-gray-300">Plane ${i + 1} Label:</label>
+                    <input type="text" class="table-input mp-plane-label" data-idx="${i}" value="${def}">
+                    <label class="text-gray-700 dark:text-gray-300 mt-1 block text-xs">Vanes on this stage:</label>
+                    <input type="number" class="table-input mp-plane-vanes" data-idx="${i}" value="${numVanesInput.value || 12}" min="1">
+                    </div>`;
+            }).join('');
+
+            const headRow = document.getElementById('mpTableHeadRow');
+            headRow.innerHTML = '<th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Run</th>' +
+                Array.from({ length: n }, (_, i) => `<th class="px-2 py-2 text-left font-medium text-gray-500 dark:text-gray-400" colspan="2">P${i + 1} Amp / Phase</th>`).join('');
+
+            const body = document.getElementById('mpTableBody');
+            const rowsHtml = [];
+            rowsHtml.push(buildMpRow('Original (O)', 'o', n));
+            for (let t = 0; t < n; t++) rowsHtml.push(buildMpRow(`Trial wt on P${t + 1}`, `t${t}`, n));
+            body.innerHTML = rowsHtml.join('');
+
+            const wtGrid = document.getElementById('mpTrialWeightsGrid');
+            wtGrid.innerHTML = Array.from({ length: n }, (_, i) => `
+                <div class="result-card">
+                    <p class="font-semibold text-sm mb-2">Trial Wt for Plane ${i + 1} (<span class="mp-plane-name-echo" data-idx="${i}">${(n === 3 ? defaultLabels3[i] : 'Plane ' + (i + 1))}</span>)</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="input-group mb-0"><label class="text-xs">Mass (g)</label><input type="number" step="any" class="table-input" id="mp_wt_mass_${i}" placeholder="e.g., 10"></div>
+                        <div class="input-group mb-0"><label class="text-xs">Angle (&deg;)</label><input type="number" step="any" class="table-input" id="mp_wt_ang_${i}" placeholder="e.g., 0"></div>
+                    </div>
+                </div>`).join('');
+
+            // Keep the little plane-name echoes in sync as labels are edited
+            labelsRow.querySelectorAll('.mp-plane-label').forEach(inp => {
+                inp.addEventListener('input', () => {
+                    const echo = wtGrid.querySelector(`.mp-plane-name-echo[data-idx="${inp.dataset.idx}"]`);
+                    if (echo) echo.textContent = inp.value || `Plane ${parseInt(inp.dataset.idx) + 1}`;
+                });
+            });
+
+            document.getElementById('mpResultsDisplay').classList.add('hidden');
+            lastMultiPlaneResult = null;
+        }
+        function buildMpRow(label, prefix, n) {
+            let cells = `<td class="px-2 py-1.5 font-medium whitespace-nowrap">${label}</td>`;
+            for (let i = 0; i < n; i++) {
+                cells += `<td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="mp_${prefix}_${i}_amp" placeholder="Amp"></td>`;
+                cells += `<td class="px-1 py-1.5"><input type="number" step="any" class="table-input" id="mp_${prefix}_${i}_ang" placeholder="°"></td>`;
+            }
+            return `<tr>${cells}</tr>`;
+        }
+        document.getElementById('mpBuildTablesButton').addEventListener('click', buildMultiPlaneTables);
+
+        document.getElementById('calculateMultiPlaneButton').addEventListener('click', () => {
+            const errEl = document.getElementById('mpErrorMessage');
+            const resultsEl = document.getElementById('mpResultsDisplay');
+            errEl.classList.add('hidden');
+            resultsEl.classList.add('hidden');
+
+            const n = parseInt(document.getElementById('mpPlaneCount').value) || 3;
+            const labels = Array.from(document.querySelectorAll('.mp-plane-label')).map((inp, i) => inp.value.trim() || `Plane ${i + 1}`);
+            if (labels.length !== n) { errEl.textContent = 'Click "Build / Reset Reading Table" first for the selected number of planes.'; errEl.classList.remove('hidden'); return; }
+
+            const getVal = (id) => { const el = document.getElementById(id); return el ? parseFloat(el.value) : NaN; };
+
+            const O = [];
+            for (let i = 0; i < n; i++) {
+                const amp = getVal(`mp_o_${i}_amp`), ang = getVal(`mp_o_${i}_ang`);
+                if (isNaN(amp) || isNaN(ang)) { errEl.textContent = `Fill in the Original reading (Amp & Phase) for Plane ${i + 1}.`; errEl.classList.remove('hidden'); return; }
+                O.push(new Vector(amp, ang));
+            }
+            const Wt = [];
+            for (let i = 0; i < n; i++) {
+                const mass = getVal(`mp_wt_mass_${i}`), ang = getVal(`mp_wt_ang_${i}`);
+                if (isNaN(mass) || isNaN(ang) || mass <= 1e-9) { errEl.textContent = `Enter a positive Trial Weight mass and angle for Plane ${i + 1}.`; errEl.classList.remove('hidden'); return; }
+                Wt.push(new Vector(mass, ang));
+            }
+            // alpha[i][j] = effect measured at plane i due to trial weight added at plane j
+            const alpha = [];
+            for (let i = 0; i < n; i++) {
+                alpha.push([]);
+                for (let j = 0; j < n; j++) {
+                    const amp = getVal(`mp_t${j}_${i}_amp`), ang = getVal(`mp_t${j}_${i}_ang`);
+                    if (isNaN(amp) || isNaN(ang)) { errEl.textContent = `Fill in the Trial-on-Plane-${j + 1} reading at Plane ${i + 1} (Amp & Phase).`; errEl.classList.remove('hidden'); return; }
+                    const T_ij = new Vector(amp, ang);
+                    alpha[i].push(T_ij.subtract(O[i]).divide(Wt[j]));
+                }
+            }
+            const negO = O.map(v => v.negate());
+            const W = solveComplexLinearSystem(alpha, negO);
+            if (!W) {
+                errEl.textContent = 'System is singular — the trial runs did not produce independent enough data across all planes. Repeat with larger or differently-placed trial weights.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            const mClassMP = machineClassSelect.value;
+            const cardsEl = document.getElementById('mpCorrectionCards');
+            cardsEl.innerHTML = W.map((w, i) => {
+                const beforeSev = getSeverityZone(O[i].magnitude, mClassMP);
+                // Exact solve ⇒ predicted residual at every plane is ~0 by construction (see note below)
+                const afterSev = getSeverityZone(0, mClassMP); // the coupled solve drives every plane's residual to ~0
+                const maxSlider = Math.max(10, (w.magnitude * 3));
+                return `
+                <div class="result-card border-green-300 dark:border-green-600 bg-green-100/50 dark:bg-green-800/30">
+                    <p class="font-semibold mb-2 text-green-800 dark:text-green-200">Correction Weight &mdash; ${labels[i]}</p>
+                    <div class="flex justify-between"><span>Mass:</span> <span class="font-mono font-bold text-lg">${w.magnitude.toFixed(3)}</span> g</div>
+                    <div class="flex justify-between"><span>Angle:</span> <span class="font-mono font-bold text-lg">${w.angleDeg.toFixed(1)}</span>&deg;</div>
+                    <div class="mt-3 pt-3 border-t border-green-300/50 dark:border-green-600/30 text-xs">
+                        <div class="flex justify-between items-center"><span>Before:</span> <span>${O[i].magnitude.toFixed(3)} mm/s ${beforeSev ? `<span class="zone-badge zone-${beforeSev.zone}">Zone ${beforeSev.zone}</span>` : ''}</span></div>
+                        <div class="flex justify-between items-center mt-1"><span>Predicted after (all planes solved together):</span> <span>~0.000 mm/s ${afterSev ? `<span class="zone-badge zone-${afterSev.zone}">Zone ${afterSev.zone}</span>` : ''}</span></div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-green-300/50 dark:border-green-600/30">
+                        <p class="text-xs font-semibold mb-1">Live what-if for this plane (other planes held at their solved weight):</p>
+                        <div class="flex justify-between text-xs"><span>Mass (g)</span><span id="mpWhatIfMassLabel_${i}" class="font-mono font-bold">${w.magnitude.toFixed(1)}</span></div>
+                        <input type="range" class="sens-slider mp-whatif-mass" data-idx="${i}" min="0" max="${maxSlider.toFixed(1)}" step="0.1" value="${w.magnitude.toFixed(2)}">
+                        <div class="flex justify-between text-xs mt-1"><span>Angle (&deg;)</span><span id="mpWhatIfAngleLabel_${i}" class="font-mono font-bold">${w.angleDeg.toFixed(0)}</span></div>
+                        <input type="range" class="sens-slider mp-whatif-angle" data-idx="${i}" min="0" max="359" step="1" value="${Math.round(w.angleDeg)}">
+                        <p class="text-xs mt-2">Predicted residual at ${labels[i]}: <span id="mpWhatIfResult_${i}" class="font-mono font-bold">---</span> mm/s <span id="mpWhatIfBadge_${i}" class="zone-badge zone-A"></span></p>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Wire the per-plane what-if sliders. Because the N-plane system was solved exactly
+            // (alpha·W = -O), holding every other plane at its solved weight means the residual at
+            // plane i as you vary only w_i reduces algebraically to: alpha[i][i] · (w_i' − W[i]).
+            cardsEl.querySelectorAll('.mp-whatif-mass, .mp-whatif-angle').forEach(slider => {
+                slider.addEventListener('input', () => {
+                    const i = parseInt(slider.dataset.idx);
+                    const massEl = cardsEl.querySelector(`.mp-whatif-mass[data-idx="${i}"]`);
+                    const angEl = cardsEl.querySelector(`.mp-whatif-angle[data-idx="${i}"]`);
+                    const candW = new Vector(parseFloat(massEl.value), parseFloat(angEl.value));
+                    document.getElementById(`mpWhatIfMassLabel_${i}`).textContent = candW.magnitude.toFixed(1);
+                    document.getElementById(`mpWhatIfAngleLabel_${i}`).textContent = candW.angleDeg.toFixed(0);
+                    const residual = alpha[i][i].multiply(candW.subtract(W[i]));
+                    const resVal = document.getElementById(`mpWhatIfResult_${i}`);
+                    const resBadge = document.getElementById(`mpWhatIfBadge_${i}`);
+                    applySeverityBadge(resBadge, resVal, residual.magnitude, mClassMP);
+                });
+            });
+            // Initialize each what-if readout at the solved weight (residual ≈ 0)
+            W.forEach((w, i) => {
+                const resVal = document.getElementById(`mpWhatIfResult_${i}`);
+                const resBadge = document.getElementById(`mpWhatIfBadge_${i}`);
+                applySeverityBadge(resBadge, resVal, 0, mClassMP);
+            });
+
+            let matrixTxt = '         ' + labels.map(l => l.padEnd(16)).join('') + '\n';
+            for (let i = 0; i < n; i++) {
+                matrixTxt += `At ${labels[i].padEnd(4)}`.slice(0, 9) + ': ' + alpha[i].map(a => `${a.magnitude.toFixed(3)} @ ${a.angleDeg.toFixed(1)}°`.padEnd(16)).join('') + '\n';
+            }
+            document.getElementById('mpMatrixDisplay').textContent = matrixTxt;
+
+            // Average off-diagonal vs diagonal magnitude ratio as a quick coupling indicator
+            let diagSum = 0, offSum = 0, offCount = 0;
+            for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) { if (i === j) diagSum += alpha[i][j].magnitude; else { offSum += alpha[i][j].magnitude; offCount++; } }
+            const crossRatio = offCount > 0 ? (offSum / offCount) / (diagSum / n + 1e-9) : 0;
+            document.getElementById('mpCrossEffectNote').textContent = crossRatio > 0.3
+                ? `Strong cross-coupling detected across planes (average off-diagonal is ${(crossRatio * 100).toFixed(0)}% of the average direct term) — treat all ${n} planes together as done here; correcting one plane at a time would leave residual imbalance at the others.`
+                : `Cross-coupling is relatively small (${(crossRatio * 100).toFixed(0)}% of direct terms) — planes are fairly independent of each other.`;
+
+            // Reuse the same polar-plot renderer as Two-Plane / Standard for each plane
+            const vaneCounts = Array.from(document.querySelectorAll('.mp-plane-vanes')).map(inp => {
+                const v = parseInt(inp.value);
+                return (v && v > 0) ? v : (parseInt(numVanesInput.value) || 12);
+            });
+            const plotsGrid = document.getElementById('mpPolarPlotsGrid');
+            plotsGrid.innerHTML = labels.map((l, i) => `
+                <div class="result-card flex flex-col items-center">
+                    <p class="font-semibold mb-2 text-center">Polar Plot &mdash; ${l} <span class="text-xs font-normal text-gray-500 dark:text-gray-400">(${vaneCounts[i]} vanes)</span></p>
+                    <div id="mpPolarContainer_${i}" style="position:relative; width:100%; max-width:320px;">
+                        <span id="mpRotArrow_${i}" style="position:absolute; top:10px; left:10px; font-size:0.75rem; font-weight:700; z-index:10; pointer-events:none;" class="text-teal-600 dark:text-teal-300"></span>
+                        <canvas id="mpPolarCanvas_${i}" style="width:100%; height:auto; border-radius:50%; background:rgba(255,255,255,0.35); cursor:crosshair;"></canvas>
+                        <div id="mpPolarTooltip_${i}" style="position:absolute; display:none; pointer-events:none; z-index:20; background:rgba(20,23,35,0.85); color:#fff; padding:6px 12px; border-radius:8px; font-size:0.8rem; white-space:nowrap; box-shadow:0 8px 20px rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.12);"></div>
+                    </div>
+                    <div id="mpPolarLegend_${i}" class="grid grid-cols-1 gap-1 text-xs mt-2 w-full"></div>
+                </div>`).join('');
+
+            lastMultiPlaneResult = { labels, O, W, vaneCounts };
+            resultsEl.classList.remove('hidden');
+            redrawMultiPlanePlots();
+        });
+
+        const mpHitBoxesByIndex = {};
+        function redrawMultiPlanePlots() {
+            if (!lastMultiPlaneResult) return;
+            const { labels, O, W, vaneCounts } = lastMultiPlaneResult;
+            labels.forEach((l, i) => {
+                const canvasEl = document.getElementById(`mpPolarCanvas_${i}`);
+                const containerEl = document.getElementById(`mpPolarContainer_${i}`);
+                if (!canvasEl || !containerEl) return;
+                if (!mpHitBoxesByIndex[i]) mpHitBoxesByIndex[i] = [];
+                renderPlanePolarPlot(canvasEl, containerEl, document.getElementById(`mpPolarLegend_${i}`), document.getElementById(`mpRotArrow_${i}`), O[i], W[i], l, mpHitBoxesByIndex[i], vaneCounts ? vaneCounts[i] : null);
+                if (canvasEl.dataset.wired !== '1') {
+                    setupMiniCanvasInteractivity(`mpPolarCanvas_${i}`, `mpPolarContainer_${i}`, `mpPolarTooltip_${i}`, mpHitBoxesByIndex[i]);
+                    canvasEl.dataset.wired = '1';
+                }
+            });
+        }
+
+        // *** ANALYTICS / HISTORY TREND ***
+        let analyticsChartInstance = null;
+        document.getElementById('loadAnalyticsButton').addEventListener('click', async () => {
+            const errEl = document.getElementById('analyticsErrorMessage');
+            errEl.classList.add('hidden');
+            const eqName = equipmentNameInput.value;
+            document.getElementById('analyticsEqLabel').textContent = eqName || '(no equipment name set)';
+            if (!eqName) { errEl.textContent = 'Enter an Equipment Name at the top of the page first, then load history.'; errEl.classList.remove('hidden'); return; }
+
+            const { data, error } = await supabaseClient
+                .from('balancing_records')
+                .select('id, report_date, equipment_name, plant_name, full_data')
+                .ilike('equipment_name', `%${eqName}%`)
+                .order('report_date', { ascending: true });
+
+            if (error) { errEl.textContent = 'Error fetching history: ' + error.message; errEl.classList.remove('hidden'); return; }
+            if (!data || data.length === 0) { errEl.textContent = 'No cloud-saved records found for this equipment name yet.'; errEl.classList.remove('hidden'); return; }
+
+            // Build a per-record row using the record's own plot location (globalState.measurementLocation)
+            const rows = data.map(rec => {
+                const fd = rec.full_data || {};
+                const loc = fd.globalState?.measurementLocation || 'IBH';
+                const locData = fd.balancingData?.[loc] || {};
+                return {
+                    date: rec.report_date,
+                    plant: rec.plant_name || '—',
+                    loc,
+                    oAmp: (typeof locData.originalAmp === 'number') ? locData.originalAmp : null,
+                    finalAmp: (typeof locData.finalAmp === 'number') ? locData.finalAmp : null,
+                    corrMass: (typeof locData.correctionMass === 'number') ? locData.correctionMass : null,
+                    corrAngle: (typeof locData.correctionAngle === 'number') ? locData.correctionAngle : null,
+                };
+            });
+
+            // Summary stats (based on Final Amp where present, else Original Amp)
+            const ampSeries = rows.map(r => (r.finalAmp !== null ? r.finalAmp : r.oAmp)).filter(v => v !== null && isFinite(v));
+            const summaryDiv = document.getElementById('analyticsSummary');
+            document.getElementById('statRecordCount').textContent = rows.length;
+            if (ampSeries.length > 0) {
+                const latest = ampSeries[ampSeries.length - 1];
+                const best = Math.min(...ampSeries);
+                document.getElementById('statLatestAmp').textContent = latest.toFixed(2) + ' mm/s';
+                document.getElementById('statBestAmp').textContent = best.toFixed(2) + ' mm/s';
+                let trendTxt = '—';
+                if (ampSeries.length >= 2) {
+                    const delta = ampSeries[ampSeries.length - 1] - ampSeries[0];
+                    trendTxt = (delta <= -0.05) ? '↓ Improving' : (delta >= 0.05) ? '↑ Worsening' : '→ Stable';
+                }
+                document.getElementById('statTrend').textContent = trendTxt;
+            } else {
+                document.getElementById('statLatestAmp').textContent = '---';
+                document.getElementById('statBestAmp').textContent = '---';
+                document.getElementById('statTrend').textContent = '---';
+            }
+            summaryDiv.classList.remove('hidden');
+
+            // Trend chart
+            const chartContainer = document.getElementById('analyticsChartContainer');
+            chartContainer.classList.remove('hidden');
+            const ctxChart = document.getElementById('analyticsTrendChart').getContext('2d');
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+            const textColor = isDark ? '#D1D5DB' : '#374151';
+            if (analyticsChartInstance) analyticsChartInstance.destroy();
+            analyticsChartInstance = new Chart(ctxChart, {
+                type: 'line',
+                data: {
+                    labels: rows.map(r => r.date),
+                    datasets: [
+                        { label: 'Original Amp (mm/s)', data: rows.map(r => r.oAmp), borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.1)', spanGaps: true, tension: 0.25 },
+                        { label: 'Final Amp After Correction (mm/s)', data: rows.map(r => r.finalAmp), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', spanGaps: true, tension: 0.25 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: textColor } } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor }, grid: { color: gridColor }, title: { display: true, text: 'mm/s RMS', color: textColor } }
+                    }
+                }
+            });
+
+            // History table
+            const tbody = document.getElementById('analyticsHistoryTableBody');
+            tbody.innerHTML = rows.slice().reverse().map(r => {
+                const sev = getSeverityZone(r.finalAmp !== null ? r.finalAmp : r.oAmp, machineClassSelect.value);
+                const badge = sev ? `<span class="zone-badge zone-${sev.zone}">Zone ${sev.zone}</span>` : '<span class="text-gray-400">N/A</span>';
+                return `<tr>
+                    <td class="px-2 py-1.5">${r.date}</td>
+                    <td class="px-2 py-1.5">${r.plant}</td>
+                    <td class="px-2 py-1.5">${r.loc}</td>
+                    <td class="px-2 py-1.5 font-mono">${r.oAmp !== null ? r.oAmp.toFixed(2) : '—'}</td>
+                    <td class="px-2 py-1.5 font-mono">${r.finalAmp !== null ? r.finalAmp.toFixed(2) : '—'}</td>
+                    <td class="px-2 py-1.5 font-mono">${r.corrMass !== null ? r.corrMass.toFixed(2) + 'g @ ' + r.corrAngle.toFixed(0) + '°' : '—'}</td>
+                    <td class="px-2 py-1.5">${badge}</td>
+                </tr>`;
+            }).join('');
+        });
 
         function drawPolarPlotBasedOnMode() {
             const currentModeTab = document.querySelector('.tab-button.active').id;
@@ -2385,6 +3848,24 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
         }
 
         // *** NEW: Helper function to build the data tables for reports ***
+        function buildSeverityReportSnippet(plotLocation) {
+            const data = balancingData[plotLocation];
+            const mClass = machineClassSelect.value;
+            const beforeSev = getSeverityZone(data.originalAmp, mClass);
+            let afterMag = null;
+            const icMagForSev = (data.calculatedICMag !== null) ? data.calculatedICMag : data.knownICMag;
+            const icAngForSev = (data.calculatedICAngle !== null) ? data.calculatedICAngle : data.knownICAngle;
+            if (data.originalAmp !== null && icMagForSev !== null && data.correctionMass !== null) {
+                const O_v = new Vector(data.originalAmp, data.originalAngle);
+                const IC_v = new Vector(icMagForSev, icAngForSev);
+                const CW_v = new Vector(data.correctionMass, data.correctionAngle);
+                afterMag = O_v.add(IC_v.multiply(CW_v)).magnitude;
+            }
+            const afterSev = getSeverityZone(afterMag, mClass);
+            if (!beforeSev && !afterSev) return '';
+            return `<p><strong>Severity (ISO 20816-1, Class ${mClass}):</strong> Before: ${data.originalAmp !== null ? data.originalAmp.toFixed(2) : '---'} mm/s [Zone ${beforeSev ? beforeSev.zone : 'N/A'}] &rarr; Predicted After: ${afterMag !== null ? afterMag.toFixed(2) : '---'} mm/s [Zone ${afterSev ? afterSev.zone : 'N/A'}]</p>`;
+        }
+
         function buildReportDataTable() {
             let dataTableHtml = '';
             
@@ -2601,6 +4082,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 summaryHtml += `<p><strong>Trim Correction Weight:</strong> ${data.trimCorrectionMass.toFixed(3)} g @ ${data.trimCorrectionAngle.toFixed(1)}&deg;${mergeText}</p>`;
             }
             
+            summaryHtml += buildSeverityReportSnippet(plotLocation);
             const dataTableHtml = buildReportDataTable();
             const plotImage = canvas.toDataURL('image/png');
             
@@ -2741,6 +4223,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
                 }
             }
 
+            summaryHtml += buildSeverityReportSnippet(plotLocation);
             const dataTableHtml = buildReportDataTable();
             const plotImage = canvas.toDataURL('image/png');
 
